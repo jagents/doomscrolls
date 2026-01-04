@@ -1,0 +1,21 @@
+{
+  "name": "doomscrolls",
+  "version": "0.1.0",
+  "description": "Classical literature via social media scroll mechanics",
+  "type": "module",
+  "scripts": {
+    "ingest": "bun run scripts/ingest.ts",
+    "ingest:poetrydb": "bun run scripts/ingest.ts --source=poetrydb",
+    "ingest:bible": "bun run scripts/ingest.ts --source=bible",
+    "ingest:wikiquote": "bun run scripts/ingest.ts --source=wikiquote",
+    "ingest:combine": "bun run scripts/ingest.ts --source=combine",
+    "ingest:all": "bun run scripts/ingest.ts --all"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+# Data (regenerated via ingestion scripts)
+data/poetrydb/*.json
+data/bible/*.json
+data/wikiquote/*.json
+data/combined/
+
+# Dependencies (regenerated via bun install)
+node_modules/
+
+# OS
+.DS_Store
