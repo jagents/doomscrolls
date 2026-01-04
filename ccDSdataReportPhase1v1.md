@@ -1,22 +1,22 @@
 # Doomscrolls Data Ingestion Report
 
-**Date:** 2026-01-04
-**Status:** Phase 1 + Phase 2A + Phase 3 Complete
+**Date:** 2026-01-05
+**Status:** Phase 1 + Phase 2A + Phase 3 v2 Complete
 
 ---
 
 ## Executive Summary
 
-The data ingestion pipeline for Doomscrolls has been successfully built and executed through Phase 3. All three content sources (PoetryDB, Bible API, Wikiquote) have been ingested and combined into a unified dataset ready for database import.
+The data ingestion pipeline for Doomscrolls has been successfully built and executed through Phase 3 v2. All three content sources (PoetryDB, Bible API, Wikiquote) have been ingested and combined into a unified dataset ready for database import.
 
-### Final Statistics (After Phase 3)
+### Final Statistics (After Phase 3 v2)
 
 | Metric | Count |
 |--------|-------|
-| **Total Unique Authors** | 491 |
-| **Total Works** | 3,457 |
-| **Total Content Chunks** | 74,524 |
-| **Total Data Size** | ~58 MB (combined) |
+| **Total Unique Authors** | 4,443 |
+| **Total Works** | 7,470 |
+| **Total Content Chunks** | 253,817 |
+| **Total Data Size** | ~200 MB (combined) |
 
 ### Phase Progression
 
@@ -24,7 +24,8 @@ The data ingestion pipeline for Doomscrolls has been successfully built and exec
 |-------|-------------------|--------------|-----------|
 | Phase 1 | 69 | 48,955 | 41 MB |
 | Phase 2A | 198 (+129) | 66,691 (+17,736) | 53 MB |
-| Phase 3 | 381 (+183) | 74,524 (+7,833) | 58 MB |
+| Phase 3 v1 | 381 (+183) | 74,524 (+7,833) | 58 MB |
+| **Phase 3 v2** | **4,394 (+4,013)** | **253,817 (+179,293)** | **~200 MB** |
 
 ---
 
@@ -36,7 +37,7 @@ The data ingestion pipeline for Doomscrolls has been successfully built and exec
 |--------|----------|-------|
 | PoetryDB | **100%** | All authors and poems available via API |
 | Bible (KJV) | **~99.7%** | 31,009 of ~31,102 verses (API bug on single-chapter books) |
-| Wikiquote | **Sampled** | 198 curated authors (Tier 1 + Tier 2) |
+| Wikiquote | **Extensive** | 4,394 authors (curated + category crawl) |
 
 ### PoetryDB
 - **Authors:** 129
@@ -64,11 +65,11 @@ Complete Old and New Testament coverage with verse-level granularity. Each verse
 
 **Known Gap:** Single-chapter books (Obadiah, Philemon, 2 John, 3 John, Jude) returned only 1 verse each due to an API quirk - missing ~93 verses total.
 
-### Wikiquote (Phase 3 Complete)
-- **Authors:** 381 (69 Tier 1 + 129 Tier 2 + 183 Tier 3)
-- **Quotes:** 40,505
-- **Coverage:** Expanded (381 authors from category crawl + curated lists)
-- **Data Size:** 35 MB
+### Wikiquote (Phase 3 v2 Complete)
+- **Authors:** 4,394 (69 Tier 1 + 129 Tier 2 + 4,196 Tier 3)
+- **Quotes:** 219,798
+- **Coverage:** Extensive (4,394 authors from category crawl + curated lists)
+- **Data Size:** ~170 MB
 
 #### Tier System
 
@@ -76,7 +77,8 @@ Complete Old and New Testament coverage with verse-level granularity. Each verse
 |------|---------|--------|-------------|
 | **Tier 1** | 69 | 14,936 | Original curated list (Phase 1) |
 | **Tier 2** | 129 | 17,736 | Expanded list (Phase 2A) |
-| **Tier 3** | 183 | 7,833 | Category crawl (Phase 3) |
+| **Tier 3 v1** | 183 | 7,833 | Category crawl v1 (HTML scraping) |
+| **Tier 3 v2** | 4,013 | 179,293 | Category crawl v2 (API-based) |
 
 #### Tier 1 Categories (Original 70)
 - Ancient Philosophy: Stoics, Greeks, Romans
@@ -376,20 +378,21 @@ The scripts support resumability - if interrupted, they will skip already-comple
 
 ## Conclusion
 
-The data ingestion pipeline has now completed through **Phase 3**, collecting **74,524 pieces of classical literature content** from 3 different sources:
+The data ingestion pipeline has now completed through **Phase 3 v2**, collecting **253,817 pieces of classical literature content** from 3 different sources:
 
 | Source | Content |
 |--------|---------|
 | PoetryDB | 3,010 poems from 129 authors |
 | Bible (KJV) | 31,009 verses from 66 books |
-| Wikiquote | 40,505 quotes from 381 authors |
+| Wikiquote | 219,798 quotes from 4,394 authors |
 
 The data is normalized into a consistent format and ready for the next phase of the Doomscrolls project.
 
 **Total ingestion time:**
 - Phase 1: ~45 minutes
 - Phase 2A (Tier 2 only): ~2 minutes
-- Phase 3 (Category crawl + ingestion): ~5 minutes
+- Phase 3 v1 (Category crawl + ingestion): ~5 minutes
+- Phase 3 v2 (API crawl + full ingestion): ~2 hours
 
 ---
 
