@@ -12,7 +12,9 @@
     "ingest:all": "bun run scripts/ingest.ts --all"
   },
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "adm-zip": "^0.5.16",
+    "cheerio": "^1.0.0",
+    "fast-xml-parser": "^5.3.3"
   },
   "devDependencies": {
     "@types/bun": "latest",
