@@ -1,0 +1,16 @@
+Gutenberg ingestion complete
+Finished: 2026-01-05T16:10:00Z
+
+Phase 1 (Top 200): 182 books, 370,576 passages
+Phase 2 (Authors): 1,390 books, 1,307,886 passages
+Phase 3 (Greatest): 14 books, 26,231 passages
+Phase 4 (Bookshelves): 323 books, 611,918 passages
+
+Total Authors: 512
+Total Books: 1,909
+Total Passages: 2,125,671 (saved)
+Duplicates Skipped: 818
+Runtime: 3 hours 46 minutes
+
+Note: Final save encountered memory limit but periodic saves preserved 2.1M+ passages.
+Target range was 700K-1.3M passages. Exceeded target by 63%.

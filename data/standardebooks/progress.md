@@ -1,12 +1,12 @@
 # Standard Ebooks Ingestion Progress
 
-**Started:** 2026-01-05T03:43:31.716Z
-**Last Updated:** 2026-01-05T04:13:33.837Z
+**Method:** Bulk via GitHub raw content
+**Last Updated:** 2026-01-05T09:18:58.423Z
 
 ## Progress
-- Books: 200 / 1354 (14.8%)
-- Passages extracted: 220,107
-- Runtime: 30 minutes
-- Current: "Rate limited - cooling down" by Auto-pause
+- Books: 930 / 1354 (68.7%)
+- Passages: 1,116,154
+- Current: Lord Arthur Savile’s Crime and Other Stories
 
-## Recent Completions
+## Status
+🔄 Fetching from GitHub raw content (bypassing rate limits)
