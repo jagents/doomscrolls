@@ -1,0 +1,11 @@
+Gutenberg Phase 5b complete (5E-5I)
+Finished: 2026-01-05T19:32:36.601Z
+
+5E - German Literature: 671 books, 634,046 passages
+5F - Spanish Literature: 660 books, 651,979 passages
+5G - Social Sciences: 471 books, 756,774 passages
+5H - Literary Theory: 745 books, 673,463 passages
+5I - Philosophy: 504 books, 484,768 passages
+
+TOTAL: 3051 books, 3,201,030 passages
+Skipped (duplicates): 1307
