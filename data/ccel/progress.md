@@ -1,0 +1,116 @@
+# CCEL Ingestion Progress
+
+**Started:** 2026-01-04
+**Last Updated:** 2026-01-04T19:22:56.182Z
+
+## Progress
+- Texts: 104 / 104 (100%)
+- Passages: 100,436
+- Authors: 42
+- Works: 104
+
+## Completed
+- [x] Augustine of Hippo - Confessions - 1,111 passages
+- [x] Augustine of Hippo - City of God - 2,299 passages
+- [x] Thomas Aquinas - Summa Theologica (First Part) - 6,493 passages
+- [x] Thomas Aquinas - Summa Theologica (First Part of the Second Part) - 6,614 passages
+- [x] Thomas Aquinas - Summa Theologica (Second Part of the Second Part) - 9,564 passages
+- [x] Thomas Aquinas - Summa Theologica (Third Part) - 6,149 passages
+- [x] John Calvin - Institutes of the Christian Religion - 3,347 passages
+- [x] John Bunyan - The Pilgrim's Progress - 697 passages
+- [x] Thomas a Kempis - The Imitation of Christ - 162 passages
+- [x] Brother Lawrence - The Practice of the Presence of God - 133 passages
+- [x] G.K. Chesterton - Orthodoxy - 619 passages
+- [x] G.K. Chesterton - The Everlasting Man - 1,389 passages
+- [x] G.K. Chesterton - Heretics - 626 passages
+- [x] Blaise Pascal - Pensees - 1,608 passages
+- [x] Athanasius of Alexandria - On the Incarnation - 38 passages
+- [x] William Law - A Serious Call to a Devout and Holy Life - 781 passages
+- [x] Jonathan Edwards - A Treatise Concerning Religious Affections - 1,507 passages
+- [x] Andrew Murray - Abide in Christ - 748 passages
+- [x] Andrew Murray - Humility - 718 passages
+- [x] E.M. Bounds - Power Through Prayer - 263 passages
+- [x] Teresa of Avila - The Interior Castle - 38 passages
+- [x] John of the Cross - Dark Night of the Soul - 38 passages
+- [x] Anonymous - The Cloud of Unknowing - 36 passages
+- [x] Julian of Norwich - Revelations of Divine Love - 37 passages
+- [x] Benedict of Nursia - The Rule of St. Benedict - 262 passages
+- [x] Anonymous - Theologia Germanica - 185 passages
+- [x] Teresa of Avila - The Way of Perfection - 37 passages
+- [x] J.C. Ryle - Holiness - 390 passages
+- [x] Jonathan Edwards - Sinners in the Hands of an Angry God - 595 passages
+- [x] Charles Spurgeon - Faith's Checkbook - 1,364 passages
+- [x] Charles Spurgeon - Morning and Evening - 37 passages
+- [x] Francis of Assisi - The Little Flowers of St. Francis - 68 passages
+- [x] Francois Fenelon - Spiritual Letters - 1,178 passages
+- [x] Martin Luther - The Bondage of the Will - 37 passages
+- [x] John Wesley - A Plain Account of Christian Perfection - 69 passages
+- [x] George Fox - The Journal of George Fox - 572 passages
+- [x] Bonaventure - The Journey of the Mind to God - 815 passages
+- [x] Charles Spurgeon - The Treasury of David Vol 1 - 1,295 passages
+- [x] Charles Spurgeon - The Treasury of David Vol 2 - 760 passages
+- [x] Charles Spurgeon - The Treasury of David Vol 3 - 81 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 1 - 723 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 2 - 1,114 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 3 - 1,817 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 4 - 6 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 5 - 1,435 passages
+- [x] John Chrysostom - Homilies on the Gospel of Matthew - 25 passages
+- [x] Jonathan Edwards - The Works of Jonathan Edwards Vol 1 - 828 passages
+- [x] Jonathan Edwards - The Works of Jonathan Edwards Vol 2 - 933 passages
+- [x] John Owen - On the Mortification of Sin in Believers - 1,793 passages
+- [x] Andrew Murray - With Christ in the School of Prayer - 470 passages
+- [x] Andrew Murray - Absolute Surrender - 630 passages
+- [x] R.A. Torrey - The Person and Work of the Holy Spirit - 1,382 passages
+- [x] S.D. Gordon - Quiet Talks on Prayer - 34 passages
+- [x] S.D. Gordon - Quiet Talks on Jesus - 1,119 passages
+- [x] Augustine of Hippo - Selected Sermons of St. Augustine - 772 passages
+- [x] Charles Finney - Lectures on Revivals of Religion - 792 passages
+- [x] Charles Finney - Lectures on Systematic Theology - 676 passages
+- [x] G.K. Chesterton - What's Wrong With the World - 603 passages
+- [x] G.K. Chesterton - The Ballad of the White Horse - 298 passages
+- [x] G.K. Chesterton - St. Francis of Assisi - 1,542 passages
+- [x] G.K. Chesterton - St. Thomas Aquinas - 1,030 passages
+- [x] E.M. Bounds - Purpose in Prayer - 1,388 passages
+- [x] E.M. Bounds - Preacher and Prayer - 0 passages
+- [x] Richard Baxter - The Saints' Everlasting Rest - 651 passages
+- [x] Richard Baxter - The Reformed Pastor - 817 passages
+- [x] D.L. Moody - Secret Power - 109 passages
+- [x] D.L. Moody - The Way to God - 412 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Genesis - 1,328 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Exodus - 1,210 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Psalms - 217 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Matthew - 838 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Romans - 1,637 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 6 - 892 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 7 - 1,820 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 8 - 87 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 9 - 24 passages
+- [x] Charles Spurgeon - Spurgeon's Sermons Vol 10 - 599 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Acts - 577 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on John - 2,241 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Corinthians - 208 passages
+- [x] Matthew Henry - Matthew Henry's Commentary on Hebrews - 330 passages
+- [x] John Wesley - Wesley's Sermons - 585 passages
+- [x] John Fletcher - Checks to Antinomianism - 250 passages
+- [x] George Whitefield - George Whitefield's Sermons - 932 passages
+- [x] Jonathan Edwards - Freedom of the Will - 974 passages
+- [x] John Owen - Exposition of Hebrews Vol 1 - 298 passages
+- [x] Andrew Murray - The Spirit of Christ - 1,385 passages
+- [x] Andrew Murray - The New Life - 22 passages
+- [x] Andrew Murray - The Full Blessing of Pentecost - 1,526 passages
+- [x] A.B. Simpson - The Fourfold Gospel - 0 passages
+- [x] S.D. Gordon - Quiet Talks on Power - 49 passages
+- [x] S.D. Gordon - Quiet Talks on Service - 86 passages
+- [x] S.D. Gordon - Quiet Talks on Home Ideals - 122 passages
+- [x] Madame Guyon - Experiencing the Depths of Jesus Christ - 842 passages
+- [x] Thomas Brooks - Precious Remedies Against Satan's Devices - 142 passages
+- [x] A.W. Pink - The Attributes of God - 1,738 passages
+- [x] A.W. Pink - The Sovereignty of God - 1,385 passages
+- [x] George Mueller - Autobiography of George Mueller - 1,099 passages
+- [x] Alexander Maclaren - Expositions of Holy Scripture: Genesis - 797 passages
+- [x] Alexander Maclaren - Expositions of Holy Scripture: Exodus - 656 passages
+- [x] Alexander Maclaren - Expositions of Holy Scripture: Psalms - 434 passages
+- [x] Alexander Maclaren - Expositions of Holy Scripture: Matthew - 157 passages
+- [x] Alexander Maclaren - Expositions of Holy Scripture: Mark - 723 passages
+- [x] Alexander Maclaren - Expositions of Holy Scripture: John - 67 passages

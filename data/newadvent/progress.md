@@ -1,0 +1,142 @@
+# New Advent Ingestion Progress
+
+**Started:** 2026-01-04T19:18:58.310Z
+**Last Updated:** 2026-01-04T19:39:48.853Z
+
+## Summary
+- Authors: 33 / 33 (100%)
+- Works: 125 / 125 (100%)
+- Passages: 67,452
+- Chapters processed: 885
+
+## Status
+Currently processing: John of Damascus - Exposition of the Orthodox Faith
+
+## Completed Works
+- Augustine of Hippo - Confessions
+- Augustine of Hippo - On Christian Doctrine
+- Augustine of Hippo - The Enchiridion
+- Augustine of Hippo - On the Holy Trinity
+- Augustine of Hippo - City of God
+- Augustine of Hippo - On Grace and Free Will
+- Augustine of Hippo - Our Lord's Sermon on the Mount
+- Augustine of Hippo - Soliloquies
+- Augustine of Hippo - On the Catechising of the Uninstructed
+- Augustine of Hippo - On Faith and the Creed
+- Augustine of Hippo - On the Profit of Believing
+- Augustine of Hippo - On Continence
+- Augustine of Hippo - On the Good of Marriage
+- Augustine of Hippo - On Patience
+- John Chrysostom - Homilies on the Gospel of Matthew
+- John Chrysostom - Homilies on Romans
+- John Chrysostom - Homilies on the Gospel of John
+- John Chrysostom - On the Priesthood
+- John Chrysostom - Homilies on the Statues
+- John Chrysostom - No One Can Harm the Man Who Does Not Injure Himself
+- John Chrysostom - Two Letters to Theodore After His Fall
+- John Chrysostom - Instructions to Catechumens
+- John Chrysostom - Homilies on First Corinthians
+- John Chrysostom - Homilies on Ephesians
+- Athanasius of Alexandria - On the Incarnation of the Word
+- Athanasius of Alexandria - Life of St. Anthony
+- Athanasius of Alexandria - Against the Heathen
+- Athanasius of Alexandria - Four Discourses Against the Arians
+- Athanasius of Alexandria - On Luke 10:22
+- Athanasius of Alexandria - Apologia de Fuga
+- Basil the Great - On the Holy Spirit
+- Basil the Great - Hexaemeron
+- Basil the Great - Letters
+- Gregory of Nazianzus - Orations
+- Gregory of Nazianzus - Letters
+- Gregory of Nyssa - On the Making of Man
+- Gregory of Nyssa - On the Soul and the Resurrection
+- Gregory of Nyssa - The Great Catechism
+- Gregory of Nyssa - On Virginity
+- Gregory of Nyssa - On the Baptism of Christ
+- Gregory of Nyssa - On Infants' Early Deaths
+- Gregory of Nyssa - On Pilgrimages
+- Jerome - Letters
+- Jerome - Illustrious Men
+- Jerome - Against Jovinianus
+- Jerome - The Perpetual Virginity of Blessed Mary
+- Jerome - The Life of Malchus
+- Jerome - The Life of Paulus the First Hermit
+- Jerome - The Life of S. Hilarion
+- Jerome - The Dialogue Against the Luciferians
+- Ambrose of Milan - On the Duties of the Clergy
+- Ambrose of Milan - On the Holy Spirit
+- Ambrose of Milan - On the Christian Faith
+- Ambrose of Milan - On the Mysteries
+- Ambrose of Milan - On Repentance
+- Ambrose of Milan - Concerning Virgins
+- Tertullian - The Apology
+- Tertullian - Against Marcion
+- Tertullian - The Prescription Against Heretics
+- Tertullian - On the Flesh of Christ
+- Tertullian - On the Resurrection of the Flesh
+- Tertullian - Against Praxeas
+- Tertullian - A Treatise on the Soul
+- Tertullian - On Repentance
+- Tertullian - On Baptism
+- Tertullian - On Prayer
+- Tertullian - Of Patience
+- Tertullian - Ad Martyras
+- Origen - De Principiis
+- Origen - Against Celsus
+- Origen - Commentary on the Gospel of John
+- Origen - Commentary on the Gospel of Matthew
+- Origen - Letter to Gregory
+- Irenaeus of Lyons - Against Heresies
+- Irenaeus of Lyons - Fragments from the Lost Writings
+- Clement of Alexandria - Exhortation to the Heathen
+- Clement of Alexandria - The Instructor
+- Clement of Alexandria - The Stromata
+- Clement of Alexandria - Who is the Rich Man That Shall Be Saved
+- Cyprian of Carthage - The Treatises of Cyprian
+- Cyprian of Carthage - The Epistles of Cyprian
+- Cyprian of Carthage - The Life and Passion of Cyprian
+- Justin Martyr - First Apology
+- Justin Martyr - Second Apology
+- Justin Martyr - Dialogue with Trypho
+- Justin Martyr - Hortatory Address to the Greeks
+- Ignatius of Antioch - Epistle to the Ephesians
+- Ignatius of Antioch - Epistle to the Romans
+- Ignatius of Antioch - Epistle to the Magnesians
+- Ignatius of Antioch - Epistle to the Trallians
+- Ignatius of Antioch - Epistle to the Philadelphians
+- Ignatius of Antioch - Epistle to the Smyrnaeans
+- Ignatius of Antioch - Epistle to Polycarp
+- Polycarp - Epistle to the Philippians
+- Polycarp - The Martyrdom of Polycarp
+- Clement of Rome - First Epistle to the Corinthians
+- Clement of Rome - Second Epistle to the Corinthians
+- The Didache - The Didache
+- Hermas - The Shepherd
+- Eusebius of Caesarea - Church History
+- Eusebius of Caesarea - Life of Constantine
+- Cyril of Jerusalem - Catechetical Lectures
+- Leo the Great - Sermons
+- Leo the Great - Letters
+- Gregory the Great - Pastoral Rule
+- Hippolytus of Rome - The Refutation of All Heresies
+- Hippolytus of Rome - Against the Heresy of Noetus
+- Hippolytus of Rome - The Antichrist
+- Lactantius - The Divine Institutes
+- Lactantius - On the Anger of God
+- Lactantius - On the Workmanship of God
+- Lactantius - Of the Manner In Which the Persecutors Died
+- Hilary of Poitiers - On the Trinity
+- Hilary of Poitiers - On the Councils
+- Ephraim the Syrian - On Our Lord
+- Ephraim the Syrian - On Admonition and Repentance
+- Ephraim the Syrian - Nisibene Hymns
+- John Cassian - Institutes
+- John Cassian - Conferences
+- Vincent of Lerins - Commonitory
+- Athenagoras of Athens - A Plea for the Christians
+- Athenagoras of Athens - The Resurrection of the Dead
+- Epistle to Diognetus - Epistle to Diognetus
+- Minucius Felix - Octavius
+- John of Damascus - Exposition of the Orthodox Faith
+
+

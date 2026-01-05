@@ -1,0 +1,6 @@
+CCEL ingestion complete
+Finished: 2026-01-04T19:22:56.183Z
+Texts: 104
+Authors: 42
+Passages: 100436
+Works: 104

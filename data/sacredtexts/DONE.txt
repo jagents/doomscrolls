@@ -1,0 +1,6 @@
+Sacred Texts ingestion complete (Round 2)
+Finished: 2026-01-05T03:50:55.933Z
+Total Texts: 20
+Total Passages: 10758
+Round 1: 9 texts, 3752 passages
+Round 2: 11 texts, 7006 passages

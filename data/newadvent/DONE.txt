@@ -1,0 +1,5 @@
+New Advent ingestion complete
+Finished: 2026-01-04T19:39:48.853Z
+Authors: 33
+Works: 125
+Passages: 67452
