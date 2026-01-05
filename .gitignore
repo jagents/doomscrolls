@@ -19,3 +19,12 @@ data/**/.progress.json
 # Downloaded/cloned content
 data/perseus/repos/
 data/standardebooks/epubs/
+
+# Phase 5 large files
+data/gutenberg/phase5-chunks.json
+data/gutenberg/.progress-phase5.json
+data/**/*-chunks.json
+data/**/.progress-*.json
+data/**/*.json
+
+doomscrolls-sans-gutenberg.zip

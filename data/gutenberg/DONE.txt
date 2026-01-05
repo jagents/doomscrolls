@@ -1,16 +1,29 @@
 Gutenberg ingestion complete
-Finished: 2026-01-05T16:10:00Z
+Finished: 2026-01-05T22:15:00Z
 
 Phase 1 (Top 200): 182 books, 370,576 passages
 Phase 2 (Authors): 1,390 books, 1,307,886 passages
 Phase 3 (Greatest): 14 books, 26,231 passages
 Phase 4 (Bookshelves): 323 books, 611,918 passages
+--- Phase 1-4 Subtotal: 1,909 books, 2,125,671 passages ---
 
-Total Authors: 512
-Total Books: 1,909
-Total Passages: 2,125,671 (saved)
-Duplicates Skipped: 818
-Runtime: 3 hours 46 minutes
+Phase 5A (New Authors): 1,707 books, 1,616,938 passages
+Phase 5B (New Bookshelves): 700 books, 779,127 passages
+Phase 5C (Science Fiction): 416 books, 302,462 passages
+Phase 5D (Russian Literature): 120 books, 88,410 passages
+Phase 5E-5I: Stopped due to memory limit (3.2GB accumulated)
+--- Phase 5 Subtotal: 2,943 books, 2,786,937 passages ---
 
-Note: Final save encountered memory limit but periodic saves preserved 2.1M+ passages.
-Target range was 700K-1.3M passages. Exceeded target by 63%.
+Total Authors: 700+
+Total Books: 4,852
+Total Passages: 4,912,608
+Duplicates Skipped: 1,539
+Total Runtime: ~10 hours
+Data Size: 3.2 GB
+
+Target: 700K-1.3M passages (Phase 1-4), +1.2M-2.2M (Phase 5)
+Achieved: 4.9M passages (377% of original target)
+
+Note: Phase 5 sub-phases 5E-5I (German, Spanish, Social Sciences, Literary Theory,
+Philosophy) were not completed due to memory constraints, but target was already
+exceeded by 3.7x. Data saved in chunks.json (Phase 1-4) and phase5-chunks.json (Phase 5).
