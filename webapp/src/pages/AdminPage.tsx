@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Database, TrendingUp, Settings, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Database, TrendingUp, Settings, RefreshCw, Users, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
 interface DatasetStats {
@@ -29,6 +29,29 @@ interface FeedStats {
   }>;
 }
 
+interface Phase2Stats {
+  users: {
+    total: number;
+    activeThisWeek: number;
+    withLikes: number;
+    withFollows: number;
+  };
+  embeddings: {
+    total: number;
+    withEmbeddings: number;
+    percentComplete: number;
+  };
+  lists: {
+    total: number;
+    curated: number;
+    totalPassagesInLists: number;
+  };
+  follows: {
+    totalFollows: number;
+    topAuthors: Array<{ name: string; slug: string; followers: number }>;
+  };
+}
+
 interface FeedConfig {
   maxAuthorRepeat: number;
   maxWorkRepeat: number;
@@ -43,7 +66,7 @@ interface FeedConfig {
   longRatio: number;
 }
 
-type TabType = 'dataset' | 'feed' | 'algorithm';
+type TabType = 'dataset' | 'feed' | 'users' | 'algorithm';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>('dataset');
@@ -51,6 +74,7 @@ export function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [datasetStats, setDatasetStats] = useState<DatasetStats | null>(null);
   const [feedStats, setFeedStats] = useState<FeedStats | null>(null);
+  const [phase2Stats, setPhase2Stats] = useState<Phase2Stats | null>(null);
   const [config, setConfig] = useState<FeedConfig | null>(null);
   const [configDraft, setConfigDraft] = useState<FeedConfig | null>(null);
 
@@ -63,6 +87,7 @@ export function AdminPage() {
       ]);
       setDatasetStats(statsRes.dataset);
       setFeedStats(statsRes.feed);
+      setPhase2Stats(statsRes.phase2);
       setConfig(configRes.config);
       setConfigDraft(configRes.config);
     } catch (error) {
@@ -96,6 +121,7 @@ export function AdminPage() {
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'dataset', label: 'Dataset', icon: <Database className="w-4 h-4" /> },
     { id: 'feed', label: 'Feed Stats', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'users', label: 'Users', icon: <Users className="w-4 h-4" /> },
     { id: 'algorithm', label: 'Algorithm', icon: <Settings className="w-4 h-4" /> },
   ];
 
@@ -153,6 +179,9 @@ export function AdminPage() {
             )}
             {activeTab === 'feed' && feedStats && (
               <FeedTab stats={feedStats} />
+            )}
+            {activeTab === 'users' && phase2Stats && (
+              <UsersTab stats={phase2Stats} />
             )}
             {activeTab === 'algorithm' && configDraft && (
               <AlgorithmTab
@@ -470,6 +499,104 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
       >
         {saving ? 'Saving...' : hasChanges ? 'Save Changes' : 'No Changes'}
       </button>
+    </div>
+  );
+}
+
+function UsersTab({ stats }: { stats: Phase2Stats }) {
+  return (
+    <div className="space-y-6">
+      {/* User stats */}
+      <div>
+        <h3 className="font-bold mb-3">Users</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-secondary rounded-xl p-4">
+            <div className="text-2xl font-bold">{stats.users.total.toLocaleString()}</div>
+            <div className="text-sm text-secondary">Total Users</div>
+          </div>
+          <div className="bg-secondary rounded-xl p-4">
+            <div className="text-2xl font-bold">{stats.users.activeThisWeek.toLocaleString()}</div>
+            <div className="text-sm text-secondary">Active This Week</div>
+          </div>
+          <div className="bg-secondary rounded-xl p-4">
+            <div className="text-2xl font-bold">{stats.users.withLikes.toLocaleString()}</div>
+            <div className="text-sm text-secondary">Users with Likes</div>
+          </div>
+          <div className="bg-secondary rounded-xl p-4">
+            <div className="text-2xl font-bold">{stats.users.withFollows.toLocaleString()}</div>
+            <div className="text-sm text-secondary">Users Following</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Embeddings progress */}
+      <div>
+        <h3 className="font-bold mb-3 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-accent" />
+          Embeddings
+        </h3>
+        <div className="bg-secondary rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-secondary">Processing Progress</span>
+            <span className="font-bold">{stats.embeddings.percentComplete}%</span>
+          </div>
+          <div className="h-3 bg-primary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-accent transition-all"
+              style={{ width: `${stats.embeddings.percentComplete}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-2 text-sm text-secondary">
+            <span>{stats.embeddings.withEmbeddings.toLocaleString()} processed</span>
+            <span>{stats.embeddings.total.toLocaleString()} total</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Lists */}
+      <div>
+        <h3 className="font-bold mb-3">Lists</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-secondary rounded-xl p-4 text-center">
+            <div className="text-xl font-bold">{stats.lists.total}</div>
+            <div className="text-xs text-secondary">Total Lists</div>
+          </div>
+          <div className="bg-secondary rounded-xl p-4 text-center">
+            <div className="text-xl font-bold">{stats.lists.curated}</div>
+            <div className="text-xs text-secondary">Curated</div>
+          </div>
+          <div className="bg-secondary rounded-xl p-4 text-center">
+            <div className="text-xl font-bold">{stats.lists.totalPassagesInLists}</div>
+            <div className="text-xs text-secondary">Passages Saved</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top followed authors */}
+      <div>
+        <h3 className="font-bold mb-3">Most Followed Authors</h3>
+        {stats.follows.topAuthors.length === 0 ? (
+          <p className="text-secondary">No follows yet</p>
+        ) : (
+          <div className="space-y-2">
+            {stats.follows.topAuthors.map((author, i) => (
+              <div
+                key={author.slug}
+                className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-secondary">#{i + 1}</span>
+                  <span>{author.name}</span>
+                </div>
+                <span className="text-accent font-medium">{author.followers} followers</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="mt-3 text-sm text-secondary">
+          Total follows: {stats.follows.totalFollows.toLocaleString()}
+        </div>
+      </div>
     </div>
   );
 }

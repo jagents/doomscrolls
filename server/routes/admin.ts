@@ -1,19 +1,21 @@
 import { Hono } from 'hono';
-import { getDatasetStats, getFeedStats } from '../services/admin-stats';
+import { getDatasetStats, getFeedStats, getPhase2Stats } from '../services/admin-stats';
 import { getFeedConfig, updateFeedConfig } from '../services/config';
 
 const admin = new Hono();
 
 // GET /api/admin/stats - Combined dataset and feed statistics
 admin.get('/stats', async (c) => {
-  const [dataset, feed] = await Promise.all([
+  const [dataset, feed, phase2] = await Promise.all([
     getDatasetStats(),
-    getFeedStats()
+    getFeedStats(),
+    getPhase2Stats(),
   ]);
 
   return c.json({
     dataset,
     feed,
+    phase2,
     timestamp: new Date().toISOString()
   });
 });

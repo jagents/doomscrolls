@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserPlus, UserMinus, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import { PassageCard } from '../components/feed/PassageCard';
 import { FeedSkeleton } from '../components/feed/FeedSkeleton';
+import { useAuthStore } from '../store/authStore';
+import { useUIStore } from '../store/uiStore';
 import type { AuthorDetail, Passage } from '../types';
 
 export function AuthorPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { isAuthenticated } = useAuthStore();
+  const { openAuthModal } = useUIStore();
+
   const [author, setAuthor] = useState<AuthorDetail | null>(null);
   const [passages, setPassages] = useState<Passage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -26,10 +34,38 @@ export function AuthorPage() {
       .then(([authorRes, passagesRes]) => {
         setAuthor(authorRes);
         setPassages(passagesRes.passages);
+        setIsFollowing(authorRes.isFollowing || false);
+        setFollowerCount(authorRes.followerCount || 0);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  const handleFollowToggle = async () => {
+    if (!isAuthenticated()) {
+      openAuthModal('login');
+      return;
+    }
+
+    if (!slug) return;
+
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        const result = await api.unfollowAuthor(slug);
+        setIsFollowing(result.isFollowing);
+        setFollowerCount(result.followerCount);
+      } else {
+        const result = await api.followAuthor(slug);
+        setIsFollowing(result.isFollowing);
+        setFollowerCount(result.followerCount);
+      }
+    } catch (err) {
+      console.error('Failed to toggle follow:', err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -74,17 +110,47 @@ export function AuthorPage() {
       {/* Author Info */}
       <div className="p-4 border-b border-border">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center text-3xl font-bold">
+          <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center text-3xl font-bold text-accent">
             {author.name.charAt(0)}
           </div>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold mb-1">{author.name}</h2>
-            <div className="text-secondary space-x-2">
-              {author.birth_year && author.death_year && (
-                <span>{author.birth_year} - {author.death_year}</span>
-              )}
-              {author.era && <span>({author.era})</span>}
-              {author.nationality && <span>| {author.nationality}</span>}
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-1">{author.name}</h2>
+                <div className="text-secondary space-x-2">
+                  {author.birth_year && author.death_year && (
+                    <span>{author.birth_year} - {author.death_year}</span>
+                  )}
+                  {author.era && <span>({author.era})</span>}
+                  {author.nationality && <span>| {author.nationality}</span>}
+                </div>
+                <p className="text-sm text-muted mt-1">
+                  {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
+                </p>
+              </div>
+              <button
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition-colors ${
+                  isFollowing
+                    ? 'bg-secondary hover:bg-red-500/20 hover:text-red-500 border border-border'
+                    : 'bg-accent hover:bg-accent-hover text-white'
+                }`}
+              >
+                {followLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isFollowing ? (
+                  <>
+                    <UserMinus className="w-4 h-4" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Follow</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

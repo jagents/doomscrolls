@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { api } from '../../services/api';
 import type { Author, Category } from '../../types';
 
 export function RightSidebar() {
+  const navigate = useNavigate();
   const [authors, setAuthors] = useState<Author[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -26,6 +29,13 @@ export function RightSidebar() {
     loadData();
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 space-y-6">
@@ -41,6 +51,18 @@ export function RightSidebar() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Search */}
+      <form onSubmit={handleSearch} className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search passages, authors..."
+          className="w-full pl-10 pr-4 py-3 bg-secondary rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-accent placeholder:text-muted"
+        />
+      </form>
+
       {/* Discover Authors */}
       {authors.length > 0 && (
         <div className="bg-secondary rounded-2xl p-4">

@@ -61,9 +61,68 @@ export interface FeedResponse {
 
 export interface AuthorDetail extends Author {
   works: Work[];
+  followerCount?: number;
+  isFollowing?: boolean;
 }
 
 export interface WorkDetail extends Work {
   author_name: string;
   author_slug: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  displayName: string | null;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+}
+
+export interface UserStats {
+  likeCount: number;
+  bookmarkCount: number;
+  followingCount: number;
+  listsCount: number;
+  worksInProgress: number;
+  worksCompleted: number;
+}
+
+export interface List {
+  id: string;
+  name: string;
+  description: string | null;
+  isCurated: boolean;
+  isPublic: boolean;
+  passageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReadingProgress {
+  workId: string;
+  workTitle: string;
+  workSlug: string;
+  authorName: string;
+  authorSlug: string;
+  currentIndex: number;
+  totalChunks: number;
+  percentComplete: number;
+  lastReadAt: string;
+  completedAt: string | null;
+}
+
+export interface SearchResult {
+  type: 'passage' | 'author' | 'work';
+  passage?: Passage;
+  author?: Author;
+  work?: Work;
+  score?: number;
+}
+
+export interface SimilarPassage extends Passage {
+  similarity: string;
 }

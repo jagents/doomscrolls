@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ExternalLink, BookOpen } from 'lucide-react';
 import { api } from '../services/api';
 import { PassageCard } from '../components/feed/PassageCard';
 import { FeedSkeleton } from '../components/feed/FeedSkeleton';
@@ -93,17 +93,28 @@ export function WorkPage() {
           {work.genre && <p>Genre: {work.genre}</p>}
         </div>
 
-        {work.source_url && (
-          <a
-            href={work.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-4 text-accent hover:underline"
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 mt-4">
+          <Link
+            to={`/work/${slug}/read`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-full transition-colors"
           >
-            <ExternalLink className="w-4 h-4" />
-            Read full text
-          </a>
-        )}
+            <BookOpen className="w-5 h-5" />
+            Read Full Work
+          </Link>
+
+          {work.source_url && (
+            <a
+              href={work.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary hover:bg-hover rounded-full transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Source
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Passages */}

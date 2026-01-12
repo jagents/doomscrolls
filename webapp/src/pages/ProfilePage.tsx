@@ -1,13 +1,59 @@
-import { Heart, Bookmark, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Heart, Bookmark, Users, BookOpen, List, LogOut, Settings, ChevronRight, Loader2 } from 'lucide-react';
 import { useUserStore } from '../store/userStore';
+import { useAuthStore } from '../store/authStore';
+import { useUIStore } from '../store/uiStore';
+import { api } from '../services/api';
+import type { UserStats, ReadingProgress } from '../types';
 
 export function ProfilePage() {
   const { likes, bookmarks, theme, setTheme } = useUserStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const { openAuthModal } = useUIStore();
 
-  const stats = [
-    { label: 'Liked', value: likes.length, icon: Heart, color: 'text-like' },
-    { label: 'Bookmarked', value: bookmarks.length, icon: Bookmark, color: 'text-accent' },
-  ];
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [reading, setReading] = useState<ReadingProgress[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isLoggedIn = isAuthenticated();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      setIsLoading(true);
+      Promise.all([
+        api.getUserStats(),
+        api.getUserReading(),
+      ])
+        .then(([statsRes, readingRes]) => {
+          setStats(statsRes.stats);
+          setReading(readingRes.reading);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    }
+  }, [isLoggedIn]);
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Ignore errors
+    }
+    logout();
+  };
+
+  const statItems = isLoggedIn && stats
+    ? [
+        { label: 'Liked', value: stats.likeCount, icon: Heart, color: 'text-like' },
+        { label: 'Bookmarked', value: stats.bookmarkCount, icon: Bookmark, color: 'text-accent' },
+        { label: 'Following', value: stats.followingCount, icon: Users, color: 'text-green-500' },
+        { label: 'Lists', value: stats.listsCount, icon: List, color: 'text-purple-500' },
+      ]
+    : [
+        { label: 'Liked', value: likes.length, icon: Heart, color: 'text-like' },
+        { label: 'Bookmarked', value: bookmarks.length, icon: Bookmark, color: 'text-accent' },
+      ];
 
   return (
     <div>
@@ -19,36 +65,122 @@ export function ProfilePage() {
       {/* Profile Card */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center text-3xl">
-            📚
+          <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center text-3xl text-accent font-bold">
+            {isLoggedIn && user ? user.displayName?.charAt(0) || user.email.charAt(0).toUpperCase() : '?'}
           </div>
-          <div>
-            <h2 className="text-xl font-bold">Reader</h2>
-            <p className="text-secondary">Scroll with purpose</p>
+          <div className="flex-1">
+            {isLoggedIn && user ? (
+              <>
+                <h2 className="text-xl font-bold">{user.displayName || 'Reader'}</h2>
+                <p className="text-secondary">{user.email}</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold">Guest Reader</h2>
+                <p className="text-secondary">Sign in to sync your data</p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={stat.label}
-                className="bg-secondary rounded-xl p-4 text-center"
-              >
-                <Icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-secondary">{stat.label}</p>
-              </div>
-            );
-          })}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          </div>
+        ) : (
+          <div className={`grid gap-4 ${statItems.length > 2 ? 'grid-cols-4' : 'grid-cols-2'}`}>
+            {statItems.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className="bg-secondary rounded-xl p-4 text-center"
+                >
+                  <Icon className={`w-5 h-5 mx-auto mb-1 ${stat.color}`} />
+                  <p className="text-xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-secondary">{stat.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Reading Progress */}
+      {isLoggedIn && reading.length > 0 && (
+        <div className="p-4 border-b border-border">
+          <h3 className="font-bold mb-3">Continue Reading</h3>
+          <div className="space-y-3">
+            {reading.slice(0, 3).map((item) => (
+              <Link
+                key={item.workId}
+                to={`/work/${item.workSlug}/read`}
+                className="flex items-center gap-3 p-3 bg-secondary rounded-lg hover:bg-hover transition-colors"
+              >
+                <BookOpen className="w-5 h-5 text-accent flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{item.workTitle}</p>
+                  <p className="text-sm text-secondary">{item.authorName}</p>
+                  <div className="mt-1 h-1.5 bg-primary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-accent"
+                      style={{ width: `${item.percentComplete}%` }}
+                    />
+                  </div>
+                </div>
+                <span className="text-sm text-muted">{item.percentComplete}%</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Links */}
+      {isLoggedIn && (
+        <div className="p-4 border-b border-border">
+          <h3 className="font-bold mb-3">Your Library</h3>
+          <div className="space-y-1">
+            <Link
+              to="/bookmarks"
+              className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Bookmark className="w-5 h-5 text-accent" />
+                <span>Bookmarks</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted" />
+            </Link>
+            <Link
+              to="/lists"
+              className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <List className="w-5 h-5 text-purple-500" />
+                <span>Your Lists</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted" />
+            </Link>
+            <Link
+              to="/following"
+              className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-green-500" />
+                <span>Following</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Settings */}
       <div className="p-4">
-        <h3 className="font-bold mb-4">Settings</h3>
+        <h3 className="font-bold mb-3 flex items-center gap-2">
+          <Settings className="w-5 h-5" />
+          Settings
+        </h3>
 
         {/* Theme */}
         <div className="flex items-center justify-between py-3 border-b border-border">
@@ -63,14 +195,34 @@ export function ProfilePage() {
           </select>
         </div>
 
-        {/* Coming Soon */}
-        <div className="mt-8 p-4 bg-secondary rounded-xl text-center">
-          <Calendar className="w-8 h-8 mx-auto mb-2 text-accent" />
-          <h4 className="font-bold mb-1">Account Sync Coming Soon</h4>
-          <p className="text-sm text-secondary">
-            Create an account to sync your likes and bookmarks across devices.
-          </p>
-        </div>
+        {/* Auth Actions */}
+        {isLoggedIn ? (
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full py-3 text-red-500 hover:bg-secondary rounded-lg transition-colors mt-2 px-1"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign out
+          </button>
+        ) : (
+          <div className="mt-6 space-y-3">
+            <button
+              onClick={() => openAuthModal('signup')}
+              className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-full transition-colors"
+            >
+              Create account
+            </button>
+            <button
+              onClick={() => openAuthModal('login')}
+              className="w-full py-3 bg-secondary hover:bg-hover font-semibold rounded-full transition-colors"
+            >
+              Sign in
+            </button>
+            <p className="text-center text-sm text-secondary">
+              Sign in to sync your likes and bookmarks across devices
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

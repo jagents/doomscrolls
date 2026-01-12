@@ -106,3 +106,91 @@ export async function getFeedStats(): Promise<FeedStats> {
     }))
   };
 }
+
+export interface Phase2Stats {
+  users: {
+    total: number;
+    activeThisWeek: number;
+    withLikes: number;
+    withFollows: number;
+  };
+  embeddings: {
+    total: number;
+    withEmbeddings: number;
+    percentComplete: number;
+  };
+  lists: {
+    total: number;
+    curated: number;
+    totalPassagesInLists: number;
+  };
+  follows: {
+    totalFollows: number;
+    topAuthors: Array<{ name: string; slug: string; followers: number }>;
+  };
+}
+
+export async function getPhase2Stats(): Promise<Phase2Stats> {
+  const [
+    [usersTotal],
+    [usersActive],
+    [usersWithLikes],
+    [usersWithFollows],
+    [embeddingsTotal],
+    [embeddingsCount],
+    [listsTotal],
+    [listsCurated],
+    [listsPassages],
+    [followsTotal],
+    topFollowedAuthors
+  ] = await Promise.all([
+    sql`SELECT COUNT(*)::int as count FROM users`,
+    sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes WHERE liked_at > NOW() - INTERVAL '7 days'`,
+    sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes`,
+    sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_follows`,
+    sql`SELECT COUNT(*)::int as count FROM chunks`,
+    sql`SELECT COUNT(*)::int as count FROM chunks WHERE embedding IS NOT NULL`,
+    sql`SELECT COUNT(*)::int as count FROM lists`,
+    sql`SELECT COUNT(*)::int as count FROM lists WHERE is_curated = true`,
+    sql`SELECT COUNT(*)::int as count FROM list_chunks`,
+    sql`SELECT COUNT(*)::int as count FROM user_follows`,
+    sql`
+      SELECT a.name, a.slug, COUNT(uf.id)::int as followers
+      FROM authors a
+      JOIN user_follows uf ON a.id = uf.author_id
+      GROUP BY a.id, a.name, a.slug
+      ORDER BY followers DESC
+      LIMIT 5
+    `
+  ]);
+
+  const totalChunks = embeddingsTotal.count || 1;
+  const withEmbeddings = embeddingsCount.count || 0;
+
+  return {
+    users: {
+      total: usersTotal.count,
+      activeThisWeek: usersActive.count,
+      withLikes: usersWithLikes.count,
+      withFollows: usersWithFollows.count,
+    },
+    embeddings: {
+      total: totalChunks,
+      withEmbeddings,
+      percentComplete: Math.round((withEmbeddings / totalChunks) * 100),
+    },
+    lists: {
+      total: listsTotal.count,
+      curated: listsCurated.count,
+      totalPassagesInLists: listsPassages.count,
+    },
+    follows: {
+      totalFollows: followsTotal.count,
+      topAuthors: topFollowedAuthors.map(row => ({
+        name: row.name,
+        slug: row.slug,
+        followers: row.followers,
+      })),
+    },
+  };
+}

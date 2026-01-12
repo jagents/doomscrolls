@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { sql } from '../db/client';
 import { formatPassage } from '../services/formatters';
+import { optionalAuth, requireAuth, getCurrentUser } from '../middleware/auth';
 
 const authors = new Hono();
 
@@ -29,8 +30,9 @@ authors.get('/', async (c) => {
 });
 
 // GET /api/authors/:slug
-authors.get('/:slug', async (c) => {
+authors.get('/:slug', optionalAuth, async (c) => {
   const slug = c.req.param('slug');
+  const currentUser = getCurrentUser(c);
 
   const [author] = await sql`
     SELECT * FROM authors WHERE slug = ${slug}
@@ -47,7 +49,90 @@ authors.get('/:slug', async (c) => {
     ORDER BY year ASC NULLS LAST
   `;
 
-  return c.json({ ...author, works });
+  // Get follower count
+  const [followerCount] = await sql`
+    SELECT COUNT(*) as count FROM user_follows WHERE author_id = ${author.id}
+  `;
+
+  // Check if current user is following
+  let isFollowing = false;
+  if (currentUser) {
+    const [follow] = await sql`
+      SELECT id FROM user_follows
+      WHERE user_id = ${currentUser.userId} AND author_id = ${author.id}
+    `;
+    isFollowing = !!follow;
+  }
+
+  return c.json({
+    ...author,
+    works,
+    followerCount: parseInt(followerCount.count),
+    isFollowing,
+  });
+});
+
+// POST /api/authors/:slug/follow - Follow an author
+authors.post('/:slug/follow', requireAuth, async (c) => {
+  const slug = c.req.param('slug');
+  const currentUser = getCurrentUser(c);
+
+  if (!currentUser) {
+    return c.json({ error: 'Not authenticated' }, 401);
+  }
+
+  const [author] = await sql`SELECT id FROM authors WHERE slug = ${slug}`;
+
+  if (!author) {
+    return c.json({ error: 'Author not found' }, 404);
+  }
+
+  await sql`
+    INSERT INTO user_follows (user_id, author_id)
+    VALUES (${currentUser.userId}, ${author.id})
+    ON CONFLICT (user_id, author_id) DO NOTHING
+  `;
+
+  const [followerCount] = await sql`
+    SELECT COUNT(*) as count FROM user_follows WHERE author_id = ${author.id}
+  `;
+
+  return c.json({
+    success: true,
+    isFollowing: true,
+    followerCount: parseInt(followerCount.count),
+  });
+});
+
+// DELETE /api/authors/:slug/follow - Unfollow an author
+authors.delete('/:slug/follow', requireAuth, async (c) => {
+  const slug = c.req.param('slug');
+  const currentUser = getCurrentUser(c);
+
+  if (!currentUser) {
+    return c.json({ error: 'Not authenticated' }, 401);
+  }
+
+  const [author] = await sql`SELECT id FROM authors WHERE slug = ${slug}`;
+
+  if (!author) {
+    return c.json({ error: 'Author not found' }, 404);
+  }
+
+  await sql`
+    DELETE FROM user_follows
+    WHERE user_id = ${currentUser.userId} AND author_id = ${author.id}
+  `;
+
+  const [followerCount] = await sql`
+    SELECT COUNT(*) as count FROM user_follows WHERE author_id = ${author.id}
+  `;
+
+  return c.json({
+    success: true,
+    isFollowing: false,
+    followerCount: parseInt(followerCount.count),
+  });
 });
 
 // GET /api/authors/:slug/passages?limit=20&offset=0
