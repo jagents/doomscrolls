@@ -388,46 +388,59 @@ export const api = {
   }>('/admin/stats'),
 
   getAdminConfig: () => request<{
-    config: {
-      maxAuthorRepeat: number;
-      maxWorkRepeat: number;
-      minLength: number;
-      maxLength: number;
-      lengthDiversityEnabled: boolean;
-      shortMaxLength: number;
-      longMinLength: number;
-      shortRatio: number;
-      mediumRatio: number;
-      longRatio: number;
-    };
+    config: FeedAlgorithmConfig;
   }>('/admin/config'),
 
-  updateAdminConfig: (config: {
-    maxAuthorRepeat?: number;
-    maxWorkRepeat?: number;
-    minLength?: number;
-    maxLength?: number;
-    lengthDiversityEnabled?: boolean;
-    shortMaxLength?: number;
-    longMinLength?: number;
-    shortRatio?: number;
-    mediumRatio?: number;
-    longRatio?: number;
-  }) => request<{
-    config: {
-      maxAuthorRepeat: number;
-      maxWorkRepeat: number;
-      minLength: number;
-      maxLength: number;
-      lengthDiversityEnabled: boolean;
-      shortMaxLength: number;
-      longMinLength: number;
-      shortRatio: number;
-      mediumRatio: number;
-      longRatio: number;
-    };
+  updateAdminConfig: (config: Partial<FeedAlgorithmConfig>) => request<{
+    config: FeedAlgorithmConfig;
   }>('/admin/config', {
     method: 'PUT',
     body: JSON.stringify(config),
   }),
 };
+
+// Full feed algorithm config type
+export interface FeedAlgorithmConfig {
+  // Diversity settings
+  maxAuthorRepeat: number;
+  maxWorkRepeat: number;
+  minLength: number;
+  maxLength: number;
+
+  // Length diversity settings
+  lengthDiversityEnabled: boolean;
+  shortMaxLength: number;
+  longMinLength: number;
+  shortRatio: number;
+  mediumRatio: number;
+  longRatio: number;
+
+  // Personalization master settings
+  enablePersonalization: boolean;
+  minSignalsForPersonalization: number;
+  fullCorpusForLoggedIn: boolean;
+
+  // Signal weights - Account-required
+  followedAuthorBoost: number;
+
+  // Signal weights - Device-based (work without account)
+  likedAuthorBoost: number;
+  likedCategoryBoost: number;
+  bookmarkedWorkBoost: number;
+  bookmarkedAuthorBoost: number;
+
+  // Derived signals
+  similarEraBoost: number;
+  popularityBoost: number;
+
+  // Algorithm tuning
+  baseRandomWeight: number;
+  personalizationWeight: number;
+  recencyPenalty: number;
+
+  // Embedding-based personalization
+  enableEmbeddingSimilarity: boolean;
+  embeddingSimilarityWeight: number;
+  minLikesForTasteVector: number;
+  tasteVectorRefreshHours: number;
+}

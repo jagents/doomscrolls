@@ -145,7 +145,7 @@ export async function getPhase2Stats(): Promise<Phase2Stats> {
     topFollowedAuthors
   ] = await Promise.all([
     sql`SELECT COUNT(*)::int as count FROM users`,
-    sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes WHERE liked_at > NOW() - INTERVAL '7 days'`,
+    sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes WHERE created_at > NOW() - INTERVAL '7 days'`,
     sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes`,
     sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_follows`,
     sql`SELECT COUNT(*)::int as count FROM chunks`,

@@ -47,9 +47,9 @@ app.get('/health', async (c) => {
 app.route('/api', routes);
 
 // Serve static webapp files from webapp/dist
-app.use('/*', serveStatic({ root: './webapp/dist' }));
+app.use('/*', serveStatic({ root: '../webapp/dist' }));
 
 // SPA fallback - serve index.html for client-side routing
-app.get('*', serveStatic({ path: './webapp/dist/index.html' }));
+app.get('*', serveStatic({ path: '../webapp/dist/index.html' }));
 
 export default app;

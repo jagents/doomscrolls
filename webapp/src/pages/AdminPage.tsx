@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Database, TrendingUp, Settings, RefreshCw, Users, Sparkles } from 'lucide-react';
+import { ArrowLeft, Database, TrendingUp, Settings, RefreshCw, Users, Sparkles, Sliders, Brain, Zap } from 'lucide-react';
 import { api } from '../services/api';
+import type { FeedAlgorithmConfig } from '../services/api';
 
 interface DatasetStats {
   chunks: number;
@@ -52,20 +53,6 @@ interface Phase2Stats {
   };
 }
 
-interface FeedConfig {
-  maxAuthorRepeat: number;
-  maxWorkRepeat: number;
-  minLength: number;
-  maxLength: number;
-  // Length diversity
-  lengthDiversityEnabled: boolean;
-  shortMaxLength: number;
-  longMinLength: number;
-  shortRatio: number;
-  mediumRatio: number;
-  longRatio: number;
-}
-
 type TabType = 'dataset' | 'feed' | 'users' | 'algorithm';
 
 export function AdminPage() {
@@ -75,8 +62,8 @@ export function AdminPage() {
   const [datasetStats, setDatasetStats] = useState<DatasetStats | null>(null);
   const [feedStats, setFeedStats] = useState<FeedStats | null>(null);
   const [phase2Stats, setPhase2Stats] = useState<Phase2Stats | null>(null);
-  const [config, setConfig] = useState<FeedConfig | null>(null);
-  const [configDraft, setConfigDraft] = useState<FeedConfig | null>(null);
+  const [config, setConfig] = useState<FeedAlgorithmConfig | null>(null);
+  const [configDraft, setConfigDraft] = useState<FeedAlgorithmConfig | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -289,15 +276,15 @@ function FeedTab({ stats }: { stats: FeedStats }) {
 }
 
 interface AlgorithmTabProps {
-  config: FeedConfig;
-  onChange: (config: FeedConfig) => void;
+  config: FeedAlgorithmConfig;
+  onChange: (config: FeedAlgorithmConfig) => void;
   onSave: () => void;
   saving: boolean;
   hasChanges: boolean;
 }
 
 function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: AlgorithmTabProps) {
-  const handleChange = (key: keyof FeedConfig, value: number | boolean) => {
+  const handleChange = (key: keyof FeedAlgorithmConfig, value: number | boolean) => {
     onChange({ ...config, [key]: value });
   };
 
@@ -488,6 +475,9 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
         )}
       </div>
 
+      {/* Personalization Section */}
+      <PersonalizationSection config={config} onChange={handleChange} />
+
       {/* Save button */}
       <button
         onClick={onSave}
@@ -499,6 +489,376 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
       >
         {saving ? 'Saving...' : hasChanges ? 'Save Changes' : 'No Changes'}
       </button>
+    </div>
+  );
+}
+
+interface PersonalizationSectionProps {
+  config: FeedAlgorithmConfig;
+  onChange: (key: keyof FeedAlgorithmConfig, value: number | boolean) => void;
+}
+
+function PersonalizationSection({ config, onChange }: PersonalizationSectionProps) {
+  return (
+    <div className="space-y-6">
+      {/* Personalization Master Settings */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Brain className="w-5 h-5 text-accent" />
+          <h3 className="font-bold text-lg">Personalization</h3>
+        </div>
+
+        <div className="space-y-4">
+          {/* Master toggle */}
+          <div className="bg-secondary/50 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Enable Personalization</div>
+                <p className="text-sm text-secondary">Use user signals to customize feed</p>
+              </div>
+              <button
+                onClick={() => onChange('enablePersonalization', !config.enablePersonalization)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  config.enablePersonalization
+                    ? 'bg-accent text-white'
+                    : 'bg-secondary text-secondary'
+                }`}
+              >
+                {config.enablePersonalization ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+          </div>
+
+          {config.enablePersonalization && (
+            <>
+              {/* Min signals threshold */}
+              <div className="bg-secondary/50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="font-medium">Min Signals Required</div>
+                    <p className="text-sm text-secondary">Likes/bookmarks before enabling personalization</p>
+                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={config.minSignalsForPersonalization}
+                    onChange={(e) => onChange('minSignalsForPersonalization', parseInt(e.target.value) || 0)}
+                    className="w-20 px-3 py-1 bg-primary border border-border rounded-lg text-right"
+                  />
+                </div>
+              </div>
+
+              {/* Full corpus toggle */}
+              <div className="bg-secondary/50 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Full Corpus for Logged-in</div>
+                    <p className="text-sm text-secondary">Access all works instead of curated only</p>
+                  </div>
+                  <button
+                    onClick={() => onChange('fullCorpusForLoggedIn', !config.fullCorpusForLoggedIn)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      config.fullCorpusForLoggedIn
+                        ? 'bg-accent text-white'
+                        : 'bg-secondary text-secondary'
+                    }`}
+                  >
+                    {config.fullCorpusForLoggedIn ? 'Yes' : 'No'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Signal Weights Section */}
+      {config.enablePersonalization && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Sliders className="w-5 h-5 text-accent" />
+            <h3 className="font-bold text-lg">Signal Weights</h3>
+          </div>
+
+          {/* Account-required signals */}
+          <div className="mb-4">
+            <h4 className="text-sm font-medium text-secondary mb-3">Account Required</h4>
+            <SignalWeightSlider
+              label="Followed Author Boost"
+              description="Boost for authors the user follows"
+              value={config.followedAuthorBoost}
+              onChange={(v) => onChange('followedAuthorBoost', v)}
+              max={10}
+              step={0.1}
+              icon="star"
+            />
+          </div>
+
+          {/* Device-based signals */}
+          <div className="mb-4">
+            <h4 className="text-sm font-medium text-secondary mb-3">Device-based (No account needed)</h4>
+            <div className="space-y-3">
+              <SignalWeightSlider
+                label="Liked Author Boost"
+                description="Boost for authors of passages user liked"
+                value={config.likedAuthorBoost}
+                onChange={(v) => onChange('likedAuthorBoost', v)}
+                max={5}
+                step={0.1}
+                icon="heart"
+              />
+              <SignalWeightSlider
+                label="Liked Category Boost"
+                description="Boost for categories user prefers"
+                value={config.likedCategoryBoost}
+                onChange={(v) => onChange('likedCategoryBoost', v)}
+                max={5}
+                step={0.1}
+                icon="folder"
+              />
+              <SignalWeightSlider
+                label="Bookmarked Work Boost"
+                description="Boost for works user bookmarked passages from"
+                value={config.bookmarkedWorkBoost}
+                onChange={(v) => onChange('bookmarkedWorkBoost', v)}
+                max={5}
+                step={0.1}
+                icon="bookmark"
+              />
+              <SignalWeightSlider
+                label="Bookmarked Author Boost"
+                description="Boost for authors of bookmarked passages"
+                value={config.bookmarkedAuthorBoost}
+                onChange={(v) => onChange('bookmarkedAuthorBoost', v)}
+                max={5}
+                step={0.1}
+                icon="user"
+              />
+            </div>
+          </div>
+
+          {/* Derived signals */}
+          <div>
+            <h4 className="text-sm font-medium text-secondary mb-3">Derived Signals</h4>
+            <div className="space-y-3">
+              <SignalWeightSlider
+                label="Similar Era Boost"
+                description="Boost for authors from similar time periods"
+                value={config.similarEraBoost}
+                onChange={(v) => onChange('similarEraBoost', v)}
+                max={5}
+                step={0.1}
+                icon="clock"
+              />
+              <SignalWeightSlider
+                label="Popularity Boost"
+                description="Boost based on passage like count"
+                value={config.popularityBoost}
+                onChange={(v) => onChange('popularityBoost', v)}
+                max={2}
+                step={0.1}
+                icon="trending"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Algorithm Tuning Section */}
+      {config.enablePersonalization && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-accent" />
+            <h3 className="font-bold text-lg">Algorithm Tuning</h3>
+          </div>
+
+          <div className="space-y-3">
+            <TuningSlider
+              label="Exploration (Random)"
+              description="Weight for random discovery"
+              value={config.baseRandomWeight}
+              onChange={(v) => onChange('baseRandomWeight', v)}
+            />
+            <TuningSlider
+              label="Exploitation (Personalized)"
+              description="Weight for personalized content"
+              value={config.personalizationWeight}
+              onChange={(v) => onChange('personalizationWeight', v)}
+            />
+            <TuningSlider
+              label="Recency Penalty"
+              description="Penalty for recently shown content"
+              value={config.recencyPenalty}
+              onChange={(v) => onChange('recencyPenalty', v)}
+            />
+          </div>
+
+          {/* Exploration vs Exploitation visualization */}
+          <div className="bg-secondary/50 rounded-xl p-4 mt-4">
+            <div className="text-sm text-secondary mb-2">Exploration vs Exploitation Balance</div>
+            <div className="flex h-4 rounded-full overflow-hidden">
+              <div
+                className="bg-blue-500 transition-all"
+                style={{ width: `${config.baseRandomWeight * 100}%` }}
+              />
+              <div
+                className="bg-accent transition-all"
+                style={{ width: `${config.personalizationWeight * 100}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-xs text-secondary">
+              <span>Random: {(config.baseRandomWeight * 100).toFixed(0)}%</span>
+              <span>Personal: {(config.personalizationWeight * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embedding Settings Section */}
+      {config.enablePersonalization && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-5 h-5 text-accent" />
+            <h3 className="font-bold text-lg">Embedding Similarity</h3>
+          </div>
+
+          <div className="space-y-4">
+            {/* Enable toggle */}
+            <div className="bg-secondary/50 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">Enable Embedding Similarity</div>
+                  <p className="text-sm text-secondary">Use taste vectors for personalization</p>
+                </div>
+                <button
+                  onClick={() => onChange('enableEmbeddingSimilarity', !config.enableEmbeddingSimilarity)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    config.enableEmbeddingSimilarity
+                      ? 'bg-accent text-white'
+                      : 'bg-secondary text-secondary'
+                  }`}
+                >
+                  {config.enableEmbeddingSimilarity ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+            </div>
+
+            {config.enableEmbeddingSimilarity && (
+              <>
+                <TuningSlider
+                  label="Embedding Similarity Weight"
+                  description="Weight for embedding-based matching"
+                  value={config.embeddingSimilarityWeight}
+                  onChange={(v) => onChange('embeddingSimilarityWeight', v)}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-secondary/50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-medium">Min Likes for Taste Vector</div>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={config.minLikesForTasteVector}
+                        onChange={(e) => onChange('minLikesForTasteVector', parseInt(e.target.value) || 1)}
+                        className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-secondary">Likes needed to compute taste</p>
+                  </div>
+
+                  <div className="bg-secondary/50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-medium">Refresh Hours</div>
+                      <input
+                        type="number"
+                        min={0.5}
+                        max={168}
+                        step={0.5}
+                        value={config.tasteVectorRefreshHours}
+                        onChange={(e) => onChange('tasteVectorRefreshHours', parseFloat(e.target.value) || 1)}
+                        className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-secondary">How often to recompute taste</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface SignalWeightSliderProps {
+  label: string;
+  description: string;
+  value: number;
+  onChange: (value: number) => void;
+  max: number;
+  step: number;
+  icon: 'star' | 'heart' | 'folder' | 'bookmark' | 'user' | 'clock' | 'trending';
+}
+
+function SignalWeightSlider({ label, description, value, onChange, max, step }: SignalWeightSliderProps) {
+  return (
+    <div className="bg-secondary/50 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="font-medium text-sm">{label}</div>
+          <p className="text-xs text-secondary">{description}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-mono w-12 text-right">{value.toFixed(1)}x</span>
+        </div>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full accent-accent"
+      />
+      <div className="flex justify-between text-xs text-secondary mt-1">
+        <span>0x</span>
+        <span>{max}x</span>
+      </div>
+    </div>
+  );
+}
+
+interface TuningSliderProps {
+  label: string;
+  description: string;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+function TuningSlider({ label, description, value, onChange }: TuningSliderProps) {
+  return (
+    <div className="bg-secondary/50 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="font-medium text-sm">{label}</div>
+          <p className="text-xs text-secondary">{description}</p>
+        </div>
+        <span className="text-sm font-mono">{(value * 100).toFixed(0)}%</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full accent-accent"
+      />
     </div>
   );
 }

@@ -63,6 +63,27 @@ export interface FeedResponse {
   passages: Passage[];
   nextCursor: string | null;
   hasMore: boolean;
+  personalized?: boolean;
+  suggestedAuthors?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    era?: string | null;
+    primary_genre?: string | null;
+  }>;
+}
+
+export interface PersonalizedFeedOptions {
+  userId?: string;
+  category?: string;
+  limit: number;
+  cursor?: string | null;
+}
+
+export interface FollowingFeedOptions {
+  userId: string;
+  limit: number;
+  cursor?: string | null;
 }
 
 export interface CursorData {
