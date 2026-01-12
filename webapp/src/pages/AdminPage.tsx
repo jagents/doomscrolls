@@ -34,6 +34,13 @@ interface FeedConfig {
   maxWorkRepeat: number;
   minLength: number;
   maxLength: number;
+  // Length diversity
+  lengthDiversityEnabled: boolean;
+  shortMaxLength: number;
+  longMinLength: number;
+  shortRatio: number;
+  mediumRatio: number;
+  longRatio: number;
 }
 
 type TabType = 'dataset' | 'feed' | 'algorithm';
@@ -261,11 +268,11 @@ interface AlgorithmTabProps {
 }
 
 function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: AlgorithmTabProps) {
-  const handleChange = (key: keyof FeedConfig, value: number) => {
+  const handleChange = (key: keyof FeedConfig, value: number | boolean) => {
     onChange({ ...config, [key]: value });
   };
 
-  const settings = [
+  const diversitySettings = [
     {
       key: 'maxAuthorRepeat' as const,
       label: 'Author Diversity',
@@ -296,33 +303,160 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
     },
   ];
 
+  const lengthBucketSettings = [
+    {
+      key: 'shortMaxLength' as const,
+      label: 'Short Max',
+      description: 'Passages up to this length are "short"',
+      min: 10,
+      max: 500,
+    },
+    {
+      key: 'longMinLength' as const,
+      label: 'Long Min',
+      description: 'Passages at least this length are "long"',
+      min: 200,
+      max: 2000,
+    },
+  ];
+
+  const ratioSettings = [
+    { key: 'shortRatio' as const, label: 'Short %', color: 'text-green-500' },
+    { key: 'mediumRatio' as const, label: 'Medium %', color: 'text-yellow-500' },
+    { key: 'longRatio' as const, label: 'Long %', color: 'text-blue-500' },
+  ];
+
+  const totalRatio = config.shortRatio + config.mediumRatio + config.longRatio;
+
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        {settings.map((setting) => (
-          <div key={setting.key} className="bg-secondary/50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <label className="font-medium">{setting.label}</label>
+      {/* Content Diversity Section */}
+      <div>
+        <h3 className="font-bold text-lg mb-4">Content Diversity</h3>
+        <div className="space-y-4">
+          {diversitySettings.map((setting) => (
+            <div key={setting.key} className="bg-secondary/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-medium">{setting.label}</label>
+                <input
+                  type="number"
+                  min={setting.min}
+                  max={setting.max}
+                  value={config[setting.key] as number}
+                  onChange={(e) => handleChange(setting.key, parseInt(e.target.value) || setting.min)}
+                  className="w-24 px-3 py-1 bg-primary border border-border rounded-lg text-right"
+                />
+              </div>
+              <p className="text-sm text-secondary">{setting.description}</p>
               <input
-                type="number"
+                type="range"
                 min={setting.min}
                 max={setting.max}
-                value={config[setting.key]}
-                onChange={(e) => handleChange(setting.key, parseInt(e.target.value) || setting.min)}
-                className="w-24 px-3 py-1 bg-primary border border-border rounded-lg text-right"
+                value={config[setting.key] as number}
+                onChange={(e) => handleChange(setting.key, parseInt(e.target.value))}
+                className="w-full mt-2 accent-accent"
               />
             </div>
-            <p className="text-sm text-secondary">{setting.description}</p>
-            <input
-              type="range"
-              min={setting.min}
-              max={setting.max}
-              value={config[setting.key]}
-              onChange={(e) => handleChange(setting.key, parseInt(e.target.value))}
-              className="w-full mt-2 accent-accent"
-            />
+          ))}
+        </div>
+      </div>
+
+      {/* Length Diversity Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-lg">Length Diversity</h3>
+          <button
+            onClick={() => handleChange('lengthDiversityEnabled', !config.lengthDiversityEnabled)}
+            className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
+              config.lengthDiversityEnabled
+                ? 'bg-accent text-white'
+                : 'bg-secondary text-secondary'
+            }`}
+          >
+            {config.lengthDiversityEnabled ? 'Enabled' : 'Disabled'}
+          </button>
+        </div>
+
+        {config.lengthDiversityEnabled && (
+          <div className="space-y-4">
+            {/* Bucket boundaries */}
+            <div className="grid grid-cols-2 gap-4">
+              {lengthBucketSettings.map((setting) => (
+                <div key={setting.key} className="bg-secondary/50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-medium text-sm">{setting.label}</label>
+                    <input
+                      type="number"
+                      min={setting.min}
+                      max={setting.max}
+                      value={config[setting.key] as number}
+                      onChange={(e) => handleChange(setting.key, parseInt(e.target.value) || setting.min)}
+                      className="w-20 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-secondary">{setting.description}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Ratio sliders */}
+            <div className="bg-secondary/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium">Target Mix</span>
+                <span className={`text-sm ${totalRatio === 100 ? 'text-green-500' : 'text-yellow-500'}`}>
+                  Total: {totalRatio}%
+                </span>
+              </div>
+
+              {/* Visual bar */}
+              <div className="flex h-4 rounded-full overflow-hidden mb-4">
+                <div
+                  className="bg-green-500 transition-all"
+                  style={{ width: `${(config.shortRatio / Math.max(totalRatio, 1)) * 100}%` }}
+                />
+                <div
+                  className="bg-yellow-500 transition-all"
+                  style={{ width: `${(config.mediumRatio / Math.max(totalRatio, 1)) * 100}%` }}
+                />
+                <div
+                  className="bg-blue-500 transition-all"
+                  style={{ width: `${(config.longRatio / Math.max(totalRatio, 1)) * 100}%` }}
+                />
+              </div>
+
+              {/* Individual sliders */}
+              <div className="space-y-3">
+                {ratioSettings.map((setting) => (
+                  <div key={setting.key} className="flex items-center gap-3">
+                    <span className={`w-20 text-sm font-medium ${setting.color}`}>{setting.label}</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={config[setting.key] as number}
+                      onChange={(e) => handleChange(setting.key, parseInt(e.target.value))}
+                      className="flex-1 accent-accent"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={config[setting.key] as number}
+                      onChange={(e) => handleChange(setting.key, parseInt(e.target.value) || 0)}
+                      className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-secondary mt-3">
+                Short: {config.minLength}-{config.shortMaxLength} chars |
+                Medium: {config.shortMaxLength + 1}-{config.longMinLength - 1} chars |
+                Long: {config.longMinLength}-{config.maxLength} chars
+              </p>
+            </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Save button */}

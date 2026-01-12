@@ -5,13 +5,27 @@ export interface FeedAlgorithmConfig {
   maxWorkRepeat: number;
   minLength: number;
   maxLength: number;
+  // Length diversity settings
+  lengthDiversityEnabled: boolean;
+  shortMaxLength: number;      // Passages <= this are "short"
+  longMinLength: number;       // Passages >= this are "long"
+  shortRatio: number;          // Target % short (0-100)
+  mediumRatio: number;         // Target % medium (0-100)
+  longRatio: number;           // Target % long (0-100)
 }
 
 const DEFAULT_CONFIG: FeedAlgorithmConfig = {
-  maxAuthorRepeat: 10,
-  maxWorkRepeat: 20,
-  minLength: 50,
+  maxAuthorRepeat: 20,
+  maxWorkRepeat: 10,
+  minLength: 10,
   maxLength: 1000,
+  // Length diversity defaults
+  lengthDiversityEnabled: true,
+  shortMaxLength: 150,
+  longMinLength: 500,
+  shortRatio: 30,
+  mediumRatio: 40,
+  longRatio: 30,
 };
 
 // Cache config in memory for performance

@@ -104,6 +104,12 @@ export const api = {
       maxWorkRepeat: number;
       minLength: number;
       maxLength: number;
+      lengthDiversityEnabled: boolean;
+      shortMaxLength: number;
+      longMinLength: number;
+      shortRatio: number;
+      mediumRatio: number;
+      longRatio: number;
     };
   }>('/admin/config'),
 
@@ -112,12 +118,24 @@ export const api = {
     maxWorkRepeat?: number;
     minLength?: number;
     maxLength?: number;
+    lengthDiversityEnabled?: boolean;
+    shortMaxLength?: number;
+    longMinLength?: number;
+    shortRatio?: number;
+    mediumRatio?: number;
+    longRatio?: number;
   }) => request<{
     config: {
       maxAuthorRepeat: number;
       maxWorkRepeat: number;
       minLength: number;
       maxLength: number;
+      lengthDiversityEnabled: boolean;
+      shortMaxLength: number;
+      longMinLength: number;
+      shortRatio: number;
+      mediumRatio: number;
+      longRatio: number;
     };
   }>('/admin/config', {
     method: 'PUT',

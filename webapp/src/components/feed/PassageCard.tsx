@@ -53,71 +53,92 @@ export function PassageCard({ passage }: PassageCardProps) {
     }
   };
 
+  // Get author initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
   return (
-    <article className="p-4 border-b border-border hover:bg-secondary/30 transition-colors">
-      {/* Passage Text */}
-      <blockquote className="text-lg leading-relaxed mb-3">
-        {passage.text}
-      </blockquote>
-
-      {/* Attribution */}
-      <div className="flex items-center gap-2 text-sm text-secondary mb-4">
-        <span>—</span>
-        <Link
-          to={`/author/${passage.author.slug}`}
-          className="hover:underline font-medium text-primary"
-        >
-          {passage.author.name}
+    <article className="px-4 py-3 border-b border-border hover:bg-secondary/30 transition-colors">
+      <div className="flex gap-3">
+        {/* Avatar */}
+        <Link to={`/author/${passage.author.slug}`} className="flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
+            {getInitials(passage.author.name)}
+          </div>
         </Link>
-        {passage.work && (
-          <>
-            <span>in</span>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header: Author & Work */}
+          <div className="flex items-center gap-1 mb-1">
             <Link
-              to={`/work/${passage.work.slug}`}
-              className="hover:underline italic"
+              to={`/author/${passage.author.slug}`}
+              className="font-bold hover:underline truncate"
             >
-              {passage.work.title}
+              {passage.author.name}
             </Link>
-          </>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-8">
-        {/* Like */}
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-2 transition-colors group ${
-            isLiked ? 'text-like' : 'text-secondary hover:text-like'
-          }`}
-        >
-          <div className="p-2 rounded-full group-hover:bg-like/10 transition-colors">
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+            {passage.work && (
+              <>
+                <span className="text-secondary">·</span>
+                <Link
+                  to={`/work/${passage.work.slug}`}
+                  className="text-secondary hover:underline truncate"
+                >
+                  {passage.work.title}
+                </Link>
+              </>
+            )}
           </div>
-          <span className="text-sm">{passage.like_count}</span>
-        </button>
 
-        {/* Bookmark */}
-        <button
-          onClick={handleBookmark}
-          className={`transition-colors group ${
-            isBookmarked ? 'text-accent' : 'text-secondary hover:text-accent'
-          }`}
-        >
-          <div className="p-2 rounded-full group-hover:bg-accent/10 transition-colors">
-            <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+          {/* Passage Text */}
+          <div className="text-[15px] leading-normal mb-3 whitespace-pre-wrap">
+            {passage.text}
           </div>
-        </button>
 
-        {/* Share */}
-        <button
-          onClick={handleShare}
-          className="text-secondary hover:text-accent transition-colors group"
-        >
-          <div className="p-2 rounded-full group-hover:bg-accent/10 transition-colors">
-            <Share2 className="w-5 h-5" />
+          {/* Actions */}
+          <div className="flex items-center justify-between max-w-md -ml-2">
+            {/* Like */}
+            <button
+              onClick={handleLike}
+              className={`flex items-center gap-1 transition-colors group ${
+                isLiked ? 'text-like' : 'text-secondary hover:text-like'
+              }`}
+            >
+              <div className="p-2 rounded-full group-hover:bg-like/10 transition-colors">
+                <Heart className={`w-[18px] h-[18px] ${isLiked ? 'fill-current' : ''}`} />
+              </div>
+              <span className="text-sm">{passage.like_count > 0 ? passage.like_count : ''}</span>
+            </button>
+
+            {/* Bookmark */}
+            <button
+              onClick={handleBookmark}
+              className={`flex items-center transition-colors group ${
+                isBookmarked ? 'text-accent' : 'text-secondary hover:text-accent'
+              }`}
+            >
+              <div className="p-2 rounded-full group-hover:bg-accent/10 transition-colors">
+                <Bookmark className={`w-[18px] h-[18px] ${isBookmarked ? 'fill-current' : ''}`} />
+              </div>
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={handleShare}
+              className="flex items-center text-secondary hover:text-accent transition-colors group"
+            >
+              <div className="p-2 rounded-full group-hover:bg-accent/10 transition-colors">
+                <Share2 className="w-[18px] h-[18px]" />
+              </div>
+            </button>
           </div>
-        </button>
+        </div>
       </div>
     </article>
   );

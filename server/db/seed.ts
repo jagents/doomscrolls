@@ -237,9 +237,9 @@ async function main() {
     await sql`
       INSERT INTO app_config (key, value) VALUES
         ('feed_algorithm', ${sql.json({
-          maxAuthorRepeat: 10,
-          maxWorkRepeat: 20,
-          minLength: 50,
+          maxAuthorRepeat: 20,
+          maxWorkRepeat: 10,
+          minLength: 10,
           maxLength: 1000
         })})
       ON CONFLICT (key) DO NOTHING

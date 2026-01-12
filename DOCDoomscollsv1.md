@@ -150,6 +150,15 @@ Content sourced from public domain works via Project Gutenberg, Internet Archive
 - **Engagement**: Average session length, passages per session, return rate
 - **Quality**: Bookmark rate, share rate, time-on-passage
 
+### Admin Dashboard
+
+Built-in dashboard at `/admin` provides:
+- Real-time corpus statistics
+- Engagement metrics (likes, top passages)
+- Tunable algorithm parameters (diversity, content length)
+
+Enables rapid iteration on feed quality without code changes.
+
 ### Monetization Options (Future)
 
 1. **Freemium**: Basic access free, premium features subscription
@@ -210,6 +219,7 @@ Content sourced from public domain works via Project Gutenberg, Internet Archive
 │  │  - /api/works        Work lookup                        │   │
 │  │  - /api/categories   Category list                      │   │
 │  │  - /api/discover     Featured content                   │   │
+│  │  - /api/admin        Admin dashboard API                │   │
 │  │  - /*                Static file serving                │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └────────────────────────────────┬────────────────────────────────┘
@@ -231,6 +241,7 @@ Content sourced from public domain works via Project Gutenberg, Internet Archive
 │  │  - curated_works - selected works for feed              │   │
 │  │  - categories - content categories                      │   │
 │  │  - work_categories - many-to-many mapping               │   │
+│  │  - app_config - algorithm settings (JSONB)              │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -336,6 +347,9 @@ chunk_stats: {
 | GET | `/api/categories` | All categories | `{ categories[] }` |
 | GET | `/api/discover/authors` | Random featured authors | `{ authors[] }` |
 | GET | `/api/discover/popular` | Most liked passages | `{ passages[] }` |
+| GET | `/api/admin/stats` | Dataset & feed statistics | `{ dataset, feed }` |
+| GET | `/api/admin/config` | Algorithm configuration | `{ config }` |
+| PUT | `/api/admin/config` | Update algorithm settings | `{ config }` |
 
 ### Security Considerations
 
@@ -382,6 +396,79 @@ cd webapp && npm run dev  # Vite with HMR
 cd webapp && npm run build
 npm start
 ```
+
+### Admin Dashboard
+
+The admin dashboard provides monitoring and configuration for the application.
+
+**Access:** `http://localhost:4800/admin`
+
+#### Features
+
+| Tab | Purpose |
+|-----|---------|
+| **Dataset** | View corpus statistics (10.3M passages, 17K works, 7.6K authors, category breakdown) |
+| **Feed Stats** | Monitor engagement (total likes, top 10 most liked passages) |
+| **Algorithm** | Configure feed algorithm parameters in real-time |
+
+#### Algorithm Settings
+
+These are **base/global settings** that apply to all users. Future personalization will layer on top.
+
+**Content Diversity:**
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `maxAuthorRepeat` | 20 | Same author max 1 in N passages |
+| `maxWorkRepeat` | 10 | Same work max 1 in N passages |
+| `minLength` | 10 | Minimum passage characters |
+| `maxLength` | 1000 | Maximum passage characters |
+
+**Length Diversity:**
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `lengthDiversityEnabled` | true | Toggle length bucket mixing |
+| `shortMaxLength` | 150 | Threshold for "short" passages |
+| `longMinLength` | 500 | Threshold for "long" passages |
+| `shortRatio` | 30% | Target short passages in feed |
+| `mediumRatio` | 40% | Target medium passages in feed |
+| `longRatio` | 30% | Target long passages in feed |
+
+Changes save to database (`app_config` table) and apply immediately to the feed algorithm.
+
+#### Future Personalization (Phase 2+)
+
+The base algorithm settings remain as defaults/guardrails, while user behavior creates personalized feeds:
+
+**Explicit Signals (Your Actions)**
+
+| Signal | Effect |
+|--------|--------|
+| **Likes** | More content from liked authors/works/categories |
+| **Bookmarks** | Strong affinity - you want to return to this |
+| **Shares** | High-quality match worth spreading |
+| **Follow Author** | Prioritize that author's works |
+| **"More like this"** | Direct tuning of recommendations |
+| **"Show less"** | Reduce similar content |
+
+**Implicit Signals (Your Behavior)**
+
+| Signal | Effect |
+|--------|--------|
+| **Dwell Time** | Longer pause = higher interest detected |
+| **Scroll Speed** | Fast scroll past = lower interest |
+| **Re-reads** | Returning to passage = strong connection |
+| **Click-through** | Tapping author/work = exploration interest |
+
+**Computed Preferences**
+
+| Preference | How It's Learned |
+|------------|------------------|
+| **Favorite Authors** | Accumulated likes/bookmarks per author |
+| **Category Ranking** | Your interaction patterns across categories |
+| **Ideal Length** | Average length of passages you engage with |
+| **Era Preference** | Ancient vs Medieval vs Modern interests |
+
+New users receive the base algorithm until enough signals are collected to personalize.
 
 ---
 
@@ -433,6 +520,10 @@ npm start
 | Curated Works | Hand-selected works included in Phase 1 feed |
 | Feed | The infinite scroll stream of passages |
 | Cursor | Pagination token encoding position + diversity state |
+| Diversity | Algorithm constraint preventing same author/work appearing too frequently |
+| Base Algorithm | Global feed settings that apply to all users |
+| Personalization | User-specific feed adjustments based on behavior (Phase 2+) |
+| Admin Dashboard | Internal tool for monitoring stats and configuring algorithm |
 
 ---
 

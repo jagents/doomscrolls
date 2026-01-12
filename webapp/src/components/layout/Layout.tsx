@@ -16,12 +16,12 @@ export function Layout() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0 border-x border-border min-h-screen">
+        <main className="flex-1 min-w-0 max-w-[600px] border-x border-border min-h-screen">
           <Outlet />
         </main>
 
         {/* Right Sidebar - Hidden on mobile/tablet */}
-        <aside className="hidden xl:block xl:w-[350px] xl:flex-shrink-0 sticky top-0 h-screen overflow-y-auto">
+        <aside className="hidden lg:block lg:w-[300px] lg:flex-shrink-0 sticky top-0 h-screen overflow-y-auto">
           <RightSidebar />
         </aside>
       </div>

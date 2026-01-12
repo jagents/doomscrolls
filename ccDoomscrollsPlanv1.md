@@ -2065,45 +2065,59 @@ npx tsx server/index.ts
 Admin dashboard for monitoring and configuring the Doomscrolls application.
 
 - **URL:** `http://localhost:4800/admin`
-- **Phase 1:** No authentication (localhost only, assume trusted)
-- **Phase 2+:** Add authentication layer
+- **Status:** ✅ Implemented (Phase 1)
+- **Authentication:** None (localhost only, assume trusted)
 
 ### Dashboard Tabs
 
-#### Tab 1: Dataset Stats
-- Total chunks, works, authors counts
-- Curated works count
-- Category breakdown with work counts
-- Database connection status
+#### Tab 1: Dataset Stats ✅
+- Total passages (10.3M chunks)
+- Works count (17,291)
+- Authors count (7,664)
+- Curated works count (153)
+- Category breakdown with work counts per category
 
-#### Tab 2: Feed Stats
+#### Tab 2: Feed Stats ✅
 - Total likes across all passages
-- Most liked passages (top 10)
-- Feed requests today (from rate limit data)
+- Total views count
+- Top 10 most liked passages with author/work info
 
-#### Tab 3: Algorithm Settings
+#### Tab 3: Algorithm Settings ✅
 
-**Diversity Controls:**
+These are **base/global settings** that apply to all users. In Phase 2+, user personalization will layer on top of these defaults.
+
+**Content Diversity:**
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `maxAuthorRepeat` | 10 | Same author appears max 1 in N passages |
-| `maxWorkRepeat` | 20 | Same work appears max 1 in N passages |
-
-**Content Length Filter:**
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `minLength` | 50 | Minimum passage character length |
+| `maxAuthorRepeat` | 20 | Same author appears max 1 in N passages |
+| `maxWorkRepeat` | 10 | Same work appears max 1 in N passages |
+| `minLength` | 10 | Minimum passage character length |
 | `maxLength` | 1000 | Maximum passage character length |
 
-Settings are persisted to database and applied immediately to feed algorithm.
+**Length Diversity:**
+
+Controls the mix of short, medium, and long passages in the feed.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `lengthDiversityEnabled` | true | Enable/disable length bucket mixing |
+| `shortMaxLength` | 150 | Passages <= this are "short" |
+| `longMinLength` | 500 | Passages >= this are "long" |
+| `shortRatio` | 30 | Target % of short passages |
+| `mediumRatio` | 40 | Target % of medium passages |
+| `longRatio` | 30 | Target % of long passages |
+
+When enabled, the algorithm queries each length bucket separately and combines results to achieve the target mix. Visual ratio bar in dashboard shows current distribution.
+
+Settings are persisted to database (`app_config` table) and applied immediately to feed algorithm. Uses sliders + number inputs with real-time validation.
 
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/stats` | Dataset and feed statistics |
-| GET | `/api/admin/config` | Current algorithm configuration |
-| PUT | `/api/admin/config` | Update algorithm configuration |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/admin/stats` | Dataset and feed statistics | ✅ |
+| GET | `/api/admin/config` | Current algorithm configuration | ✅ |
+| PUT | `/api/admin/config` | Update algorithm configuration | ✅ |
 
 ### Database Schema
 
@@ -2114,42 +2128,71 @@ CREATE TABLE IF NOT EXISTS app_config (
   value JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Default config values
-INSERT INTO app_config (key, value) VALUES
-  ('feed_algorithm', '{
-    "maxAuthorRepeat": 10,
-    "maxWorkRepeat": 20,
-    "minLength": 50,
-    "maxLength": 1000
-  }'::jsonb)
-ON CONFLICT (key) DO NOTHING;
 ```
 
-### Frontend Components
-
-```
-webapp/src/
-├── pages/
-│   └── AdminPage.tsx           # Main admin dashboard
-├── components/
-│   └── admin/
-│       ├── AdminLayout.tsx     # Admin-specific layout
-│       ├── StatsTab.tsx        # Dataset statistics
-│       ├── FeedStatsTab.tsx    # Feed/engagement stats
-│       └── AlgorithmTab.tsx    # Algorithm settings form
-```
+**Note:** Use `sql.json()` helper when inserting JSONB values to avoid double-encoding.
 
 ### Implementation Files
 
 **Backend:**
-- `server/routes/admin.ts` - Admin API routes
-- `server/services/admin-stats.ts` - Statistics queries
-- `server/services/config.ts` - Config read/write
+- `server/routes/admin.ts` - Admin API routes (stats, config CRUD)
+- `server/services/admin-stats.ts` - Statistics queries (parallel execution)
+- `server/services/config.ts` - Config read/write with in-memory caching
 
 **Frontend:**
-- `webapp/src/pages/AdminPage.tsx` - Dashboard page
-- `webapp/src/components/admin/*` - Tab components
+- `webapp/src/pages/AdminPage.tsx` - Complete dashboard with 3 tabs
+- `webapp/src/services/api.ts` - Admin API methods added
+
+### Algorithm Variables: Base vs Personalized
+
+**Phase 1 (Current):** Global base settings apply to all users equally.
+
+**Phase 2+ (Future):** User personalization layers on top of base settings.
+
+#### Explicit User Signals (Direct Actions)
+
+| Signal | Weight | Effect |
+|--------|--------|--------|
+| **Likes** | Medium | Weight toward liked authors/works/categories |
+| **Bookmarks** | High | Stronger affinity signal - user wants to return |
+| **Shares** | High | Content worth sharing = high quality match |
+| **Category Selection** | Medium | User-selected favorites get boosted |
+| **"More like this"** | High | Direct feedback to tune recommendations |
+| **"Show less"** | High (negative) | Reduce similar content |
+| **Follow Author** | High | Prioritize followed authors' works |
+| **Block Author/Work** | Absolute | Never show blocked content |
+
+#### Implicit User Signals (Behavior-Based)
+
+| Signal | Weight | Effect |
+|--------|--------|--------|
+| **Dwell Time** | Medium | Longer pause = higher interest |
+| **Scroll Velocity** | Low | Fast scroll past = low interest |
+| **Re-reads** | High | Returning to same passage = strong affinity |
+| **Session Depth** | Low | How far user scrolls per session |
+| **Time of Day** | Low | Content preferences may vary by time |
+| **Reading Completion** | Medium | Finishing long passages = engagement |
+| **Click-through** | Medium | Tapping author/work links = exploration interest |
+
+#### Derived Signals (Computed)
+
+| Signal | Computation | Effect |
+|--------|-------------|--------|
+| **Author Affinity** | Likes + bookmarks + follows per author | Author-level preference score |
+| **Category Affinity** | Weighted sum of interactions per category | Category preference ranking |
+| **Era Preference** | Ancient vs Medieval vs Modern interaction rates | Time period weighting |
+| **Length Preference** | Avg length of liked passages | Adjust min/max length per user |
+| **Content Freshness** | Time since user last saw work | Avoid repetition |
+
+**Future Algorithm Concept:**
+```
+base_score = random() with diversity constraints (admin settings)
+user_score = author_affinity + category_match + similar_to_liked
+freshness_penalty = decay(time_since_last_seen)
+final_score = (0.3 * base_score) + (0.7 * user_score) - freshness_penalty
+```
+
+Admin settings remain as defaults/guardrails while personalization creates unique feeds per user. New users get the base algorithm until sufficient signals are collected (cold start).
 
 ### Phase 2+ Expansion Points
 
@@ -2159,9 +2202,10 @@ Future additions to admin dashboard:
 - Content moderation queue
 - Category management (add/edit/delete)
 - Curated works editor (add/remove works)
-- Real-time feed preview
+- Real-time feed preview with test user
 - Export/import configuration
 - Audit log of config changes
+- Per-user algorithm weight adjustments
 
 ---
 
