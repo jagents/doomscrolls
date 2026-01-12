@@ -406,11 +406,12 @@ CREATE INDEX IF NOT EXISTS idx_works_search ON works USING GIN(search_vector);
 |--------|----------|-------------|--------|
 | GET | `/api/lists` | Get user's lists | ✅ |
 | POST | `/api/lists` | Create new list | ✅ |
-| GET | `/api/lists/:id` | Get list details | ✅ |
-| PUT | `/api/lists/:id` | Update list | ✅ |
-| DELETE | `/api/lists/:id` | Delete list | ✅ |
-| POST | `/api/lists/:id/passages` | Add passage to list | ✅ |
-| DELETE | `/api/lists/:id/passages/:chunkId` | Remove passage | ✅ |
+| GET | `/api/lists/:idOrSlug` | Get list details (accepts UUID or slug) | ✅ |
+| PUT | `/api/lists/:idOrSlug` | Update list | ✅ |
+| DELETE | `/api/lists/:idOrSlug` | Delete list | ✅ |
+| POST | `/api/lists/:idOrSlug/passages` | Add passage to list | ✅ |
+| POST | `/api/lists/:idOrSlug/chunks` | Add passage (alias) | ✅ |
+| DELETE | `/api/lists/:idOrSlug/passages/:chunkId` | Remove passage | ✅ |
 | GET | `/api/lists/curated` | Get curated editorial lists | ✅ |
 
 #### Full Work Reader
@@ -1112,11 +1113,12 @@ PORT=4800
 - `server/routes/feed.ts` - Feed endpoints
 - `server/routes/auth.ts` - Authentication endpoints
 - `server/routes/user.ts` - User data endpoints
-- `server/routes/lists.ts` - Lists endpoints
+- `server/routes/lists.ts` - Lists endpoints (supports id/slug lookup)
 - `server/routes/works.ts` - Works and reader endpoints
-- `server/routes/search.ts` - Search endpoint
+- `server/routes/search.ts` - Search endpoint (flat results array)
 - `server/routes/admin.ts` - Admin endpoints
 - `server/services/feed-algorithm.ts` - Core feed algorithm
+- `server/services/admin-stats.ts` - Admin statistics (uses pg_class for fast counts)
 - `server/services/config.ts` - Configuration management
 - `server/db/client.ts` - Database connection
 

@@ -5,6 +5,31 @@ import { formatPassage } from '../services/formatters';
 
 const lists = new Hono();
 
+// Helper to check if string looks like a UUID
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+// Helper to find list by id or slug
+async function findList(idOrSlug: string) {
+  if (isUUID(idOrSlug)) {
+    const [list] = await sql`SELECT * FROM lists WHERE id = ${idOrSlug}`;
+    return list;
+  }
+  const [list] = await sql`SELECT * FROM lists WHERE slug = ${idOrSlug}`;
+  return list;
+}
+
+// Helper to find list owned by user (by id or slug)
+async function findOwnedList(idOrSlug: string, userId: string) {
+  if (isUUID(idOrSlug)) {
+    const [list] = await sql`SELECT * FROM lists WHERE id = ${idOrSlug} AND user_id = ${userId}`;
+    return list;
+  }
+  const [list] = await sql`SELECT * FROM lists WHERE slug = ${idOrSlug} AND user_id = ${userId}`;
+  return list;
+}
+
 // Helper to generate slug from name
 function generateSlug(name: string): string {
   return name
@@ -138,14 +163,12 @@ lists.post('/', requireAuth, async (c) => {
   });
 });
 
-// GET /api/lists/:slug - Get list details with passages
-lists.get('/:slug', optionalAuth, async (c) => {
-  const slug = c.req.param('slug');
+// GET /api/lists/:idOrSlug - Get list details with passages
+lists.get('/:idOrSlug', optionalAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
   const currentUser = getCurrentUser(c);
 
-  const [list] = await sql`
-    SELECT * FROM lists WHERE slug = ${slug}
-  `;
+  const list = await findList(idOrSlug);
 
   if (!list) {
     return c.json({ error: 'List not found' }, 404);
@@ -199,17 +222,15 @@ lists.get('/:slug', optionalAuth, async (c) => {
   });
 });
 
-// PUT /api/lists/:slug - Update list
-lists.put('/:slug', requireAuth, async (c) => {
-  const slug = c.req.param('slug');
+// PUT /api/lists/:idOrSlug - Update list
+lists.put('/:idOrSlug', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
   const currentUser = getCurrentUser(c);
   if (!currentUser) {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const [list] = await sql`
-    SELECT * FROM lists WHERE slug = ${slug} AND user_id = ${currentUser.userId}
-  `;
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
 
   if (!list) {
     return c.json({ error: 'List not found or not authorized' }, 404);
@@ -242,17 +263,15 @@ lists.put('/:slug', requireAuth, async (c) => {
   });
 });
 
-// DELETE /api/lists/:slug - Delete list
-lists.delete('/:slug', requireAuth, async (c) => {
-  const slug = c.req.param('slug');
+// DELETE /api/lists/:idOrSlug - Delete list
+lists.delete('/:idOrSlug', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
   const currentUser = getCurrentUser(c);
   if (!currentUser) {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const [list] = await sql`
-    SELECT * FROM lists WHERE slug = ${slug} AND user_id = ${currentUser.userId}
-  `;
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
 
   if (!list) {
     return c.json({ error: 'List not found or not authorized' }, 404);
@@ -268,17 +287,15 @@ lists.delete('/:slug', requireAuth, async (c) => {
   return c.json({ success: true });
 });
 
-// POST /api/lists/:slug/chunks - Add passage to list
-lists.post('/:slug/chunks', requireAuth, async (c) => {
-  const slug = c.req.param('slug');
+// POST /api/lists/:idOrSlug/chunks - Add passage to list (also supports /passages)
+lists.post('/:idOrSlug/chunks', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
   const currentUser = getCurrentUser(c);
   if (!currentUser) {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const [list] = await sql`
-    SELECT * FROM lists WHERE slug = ${slug} AND user_id = ${currentUser.userId}
-  `;
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
 
   if (!list) {
     return c.json({ error: 'List not found or not authorized' }, 404);
@@ -313,18 +330,57 @@ lists.post('/:slug/chunks', requireAuth, async (c) => {
   }
 });
 
-// DELETE /api/lists/:slug/chunks/:chunkId - Remove passage from list
-lists.delete('/:slug/chunks/:chunkId', requireAuth, async (c) => {
-  const slug = c.req.param('slug');
+// Alias: POST /api/lists/:idOrSlug/passages
+lists.post('/:idOrSlug/passages', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
+  const currentUser = getCurrentUser(c);
+  if (!currentUser) {
+    return c.json({ error: 'Not authenticated' }, 401);
+  }
+
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
+
+  if (!list) {
+    return c.json({ error: 'List not found or not authorized' }, 404);
+  }
+
+  const body = await c.req.json();
+  const { chunkId, note } = body;
+
+  if (!chunkId) {
+    return c.json({ error: 'chunkId is required' }, 400);
+  }
+
+  const [maxPos] = await sql`
+    SELECT COALESCE(MAX(position), -1) + 1 as next_pos
+    FROM list_chunks WHERE list_id = ${list.id}
+  `;
+
+  try {
+    await sql`
+      INSERT INTO list_chunks (list_id, chunk_id, position, note)
+      VALUES (${list.id}, ${chunkId}, ${maxPos.next_pos}, ${note || null})
+      ON CONFLICT (list_id, chunk_id) DO UPDATE SET note = ${note || null}
+    `;
+
+    await sql`UPDATE lists SET updated_at = NOW() WHERE id = ${list.id}`;
+
+    return c.json({ success: true, position: maxPos.next_pos });
+  } catch (error) {
+    return c.json({ error: 'Failed to add passage to list' }, 400);
+  }
+});
+
+// DELETE /api/lists/:idOrSlug/chunks/:chunkId - Remove passage from list
+lists.delete('/:idOrSlug/chunks/:chunkId', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
   const chunkId = c.req.param('chunkId');
   const currentUser = getCurrentUser(c);
   if (!currentUser) {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const [list] = await sql`
-    SELECT * FROM lists WHERE slug = ${slug} AND user_id = ${currentUser.userId}
-  `;
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
 
   if (!list) {
     return c.json({ error: 'List not found or not authorized' }, 404);
@@ -335,23 +391,45 @@ lists.delete('/:slug/chunks/:chunkId', requireAuth, async (c) => {
     WHERE list_id = ${list.id} AND chunk_id = ${chunkId}
   `;
 
-  // Update list timestamp
   await sql`UPDATE lists SET updated_at = NOW() WHERE id = ${list.id}`;
 
   return c.json({ success: true });
 });
 
-// PUT /api/lists/:slug/chunks/reorder - Reorder passages in list
-lists.put('/:slug/chunks/reorder', requireAuth, async (c) => {
-  const slug = c.req.param('slug');
+// Alias: DELETE /api/lists/:idOrSlug/passages/:chunkId
+lists.delete('/:idOrSlug/passages/:chunkId', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
+  const chunkId = c.req.param('chunkId');
   const currentUser = getCurrentUser(c);
   if (!currentUser) {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const [list] = await sql`
-    SELECT * FROM lists WHERE slug = ${slug} AND user_id = ${currentUser.userId}
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
+
+  if (!list) {
+    return c.json({ error: 'List not found or not authorized' }, 404);
+  }
+
+  await sql`
+    DELETE FROM list_chunks
+    WHERE list_id = ${list.id} AND chunk_id = ${chunkId}
   `;
+
+  await sql`UPDATE lists SET updated_at = NOW() WHERE id = ${list.id}`;
+
+  return c.json({ success: true });
+});
+
+// PUT /api/lists/:idOrSlug/chunks/reorder - Reorder passages in list
+lists.put('/:idOrSlug/chunks/reorder', requireAuth, async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
+  const currentUser = getCurrentUser(c);
+  if (!currentUser) {
+    return c.json({ error: 'Not authenticated' }, 401);
+  }
+
+  const list = await findOwnedList(idOrSlug, currentUser.userId);
 
   if (!list) {
     return c.json({ error: 'List not found or not authorized' }, 404);
@@ -373,7 +451,6 @@ lists.put('/:slug/chunks/reorder', requireAuth, async (c) => {
     `;
   }
 
-  // Update list timestamp
   await sql`UPDATE lists SET updated_at = NOW() WHERE id = ${list.id}`;
 
   return c.json({ success: true });

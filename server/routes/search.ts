@@ -165,13 +165,52 @@ search.get('/', async (c) => {
 
   const searchTime = Date.now() - startTime;
 
+  // Flatten results into a single array with type field for client compatibility
+  const flatResults: Array<{
+    type: 'passage' | 'author' | 'work';
+    passage?: any;
+    author?: any;
+    work?: any;
+    score?: number;
+  }> = [];
+
+  // Add authors
+  for (const author of results.authors) {
+    flatResults.push({
+      type: 'author',
+      author,
+      score: author.score,
+    });
+  }
+
+  // Add works
+  for (const work of results.works) {
+    flatResults.push({
+      type: 'work',
+      work,
+      score: work.score,
+    });
+  }
+
+  // Add passages
+  for (const passage of results.passages) {
+    flatResults.push({
+      type: 'passage',
+      passage,
+      score: passage.score,
+    });
+  }
+
+  // Sort all by score descending
+  flatResults.sort((a, b) => (b.score || 0) - (a.score || 0));
+
   return c.json({
     query,
-    mode: actualMode,
+    results: flatResults,
+    total: flatResults.length,
+    method: actualMode as 'hybrid' | 'keyword',
+    // Keep additional fields for backwards compatibility
     embeddingsAvailable,
-    results,
-    totalResults:
-      results.authors.length + results.works.length + results.passages.length,
     searchTime,
   });
 });

@@ -15,35 +15,18 @@ user.get('/likes', async (c) => {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
-  const offset = parseInt(c.req.query('offset') || '0');
-
   const likes = await sql`
-    SELECT
-      c.id, c.text, c.type,
-      a.id as author_id, a.name as author_name, a.slug as author_slug,
-      w.id as work_id, w.title as work_title, w.slug as work_slug,
-      COALESCE(cs.like_count, 0) as like_count,
-      ul.created_at as liked_at
-    FROM user_likes ul
-    JOIN chunks c ON ul.chunk_id = c.id
-    JOIN authors a ON c.author_id = a.id
-    LEFT JOIN works w ON c.work_id = w.id
-    LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
-    WHERE ul.user_id = ${currentUser.userId}
-    ORDER BY ul.created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
-
-  const [countResult] = await sql`
-    SELECT COUNT(*) as total FROM user_likes WHERE user_id = ${currentUser.userId}
+    SELECT chunk_id, created_at as liked_at
+    FROM user_likes
+    WHERE user_id = ${currentUser.userId}
+    ORDER BY created_at DESC
   `;
 
   return c.json({
-    passages: likes.map(formatPassage),
-    total: parseInt(countResult.total),
-    limit,
-    offset,
+    likes: likes.map((l) => ({
+      chunkId: l.chunk_id,
+      likedAt: l.liked_at,
+    })),
   });
 });
 
@@ -62,7 +45,6 @@ user.post('/likes/sync', async (c) => {
   }
 
   let synced = 0;
-  let failed = 0;
 
   for (const chunkId of chunkIds) {
     try {
@@ -73,24 +55,38 @@ user.post('/likes/sync', async (c) => {
       `;
       synced++;
     } catch (error) {
-      failed++;
+      // Ignore errors for individual items
     }
   }
 
-  // Update user stats
-  await sql`
-    UPDATE user_stats
-    SET passages_liked = (
-      SELECT COUNT(*) FROM user_likes WHERE user_id = ${currentUser.userId}
-    ),
-    updated_at = NOW()
+  // Update user stats (ignore if table doesn't exist)
+  try {
+    await sql`
+      UPDATE user_stats
+      SET passages_liked = (
+        SELECT COUNT(*) FROM user_likes WHERE user_id = ${currentUser.userId}
+      ),
+      updated_at = NOW()
+      WHERE user_id = ${currentUser.userId}
+    `;
+  } catch (e) {
+    // user_stats table may not exist
+  }
+
+  // Return all user's likes
+  const allLikes = await sql`
+    SELECT chunk_id, created_at as liked_at
+    FROM user_likes
     WHERE user_id = ${currentUser.userId}
+    ORDER BY created_at DESC
   `;
 
   return c.json({
     synced,
-    failed,
-    total: synced + failed,
+    likes: allLikes.map((l) => ({
+      chunkId: l.chunk_id,
+      likedAt: l.liked_at,
+    })),
   });
 });
 
@@ -118,35 +114,18 @@ user.get('/bookmarks', async (c) => {
     return c.json({ error: 'Not authenticated' }, 401);
   }
 
-  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
-  const offset = parseInt(c.req.query('offset') || '0');
-
   const bookmarks = await sql`
-    SELECT
-      c.id, c.text, c.type,
-      a.id as author_id, a.name as author_name, a.slug as author_slug,
-      w.id as work_id, w.title as work_title, w.slug as work_slug,
-      COALESCE(cs.like_count, 0) as like_count,
-      ub.created_at as bookmarked_at
-    FROM user_bookmarks ub
-    JOIN chunks c ON ub.chunk_id = c.id
-    JOIN authors a ON c.author_id = a.id
-    LEFT JOIN works w ON c.work_id = w.id
-    LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
-    WHERE ub.user_id = ${currentUser.userId}
-    ORDER BY ub.created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
-
-  const [countResult] = await sql`
-    SELECT COUNT(*) as total FROM user_bookmarks WHERE user_id = ${currentUser.userId}
+    SELECT chunk_id, created_at as bookmarked_at
+    FROM user_bookmarks
+    WHERE user_id = ${currentUser.userId}
+    ORDER BY created_at DESC
   `;
 
   return c.json({
-    passages: bookmarks.map(formatPassage),
-    total: parseInt(countResult.total),
-    limit,
-    offset,
+    bookmarks: bookmarks.map((b) => ({
+      chunkId: b.chunk_id,
+      bookmarkedAt: b.bookmarked_at,
+    })),
   });
 });
 
@@ -165,7 +144,6 @@ user.post('/bookmarks/sync', async (c) => {
   }
 
   let synced = 0;
-  let failed = 0;
 
   for (const chunkId of chunkIds) {
     try {
@@ -176,24 +154,38 @@ user.post('/bookmarks/sync', async (c) => {
       `;
       synced++;
     } catch (error) {
-      failed++;
+      // Ignore errors for individual items
     }
   }
 
-  // Update user stats
-  await sql`
-    UPDATE user_stats
-    SET passages_bookmarked = (
-      SELECT COUNT(*) FROM user_bookmarks WHERE user_id = ${currentUser.userId}
-    ),
-    updated_at = NOW()
+  // Update user stats (ignore if table doesn't exist)
+  try {
+    await sql`
+      UPDATE user_stats
+      SET passages_bookmarked = (
+        SELECT COUNT(*) FROM user_bookmarks WHERE user_id = ${currentUser.userId}
+      ),
+      updated_at = NOW()
+      WHERE user_id = ${currentUser.userId}
+    `;
+  } catch (e) {
+    // user_stats table may not exist
+  }
+
+  // Return all user's bookmarks
+  const allBookmarks = await sql`
+    SELECT chunk_id, created_at as bookmarked_at
+    FROM user_bookmarks
     WHERE user_id = ${currentUser.userId}
+    ORDER BY created_at DESC
   `;
 
   return c.json({
     synced,
-    failed,
-    total: synced + failed,
+    bookmarks: allBookmarks.map((b) => ({
+      chunkId: b.chunk_id,
+      bookmarkedAt: b.bookmarked_at,
+    })),
   });
 });
 

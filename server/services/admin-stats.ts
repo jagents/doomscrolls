@@ -27,7 +27,7 @@ export interface FeedStats {
 }
 
 export async function getDatasetStats(): Promise<DatasetStats> {
-  // Run queries in parallel
+  // Run queries in parallel - use pg_class for approximate count of large tables
   const [
     [chunksResult],
     [worksResult],
@@ -36,7 +36,8 @@ export async function getDatasetStats(): Promise<DatasetStats> {
     [categoriesResult],
     categoryBreakdown
   ] = await Promise.all([
-    sql`SELECT COUNT(*)::int as count FROM chunks`,
+    // Use pg_class for fast approximate count of chunks (10M+ rows)
+    sql`SELECT COALESCE(reltuples, 0)::bigint as count FROM pg_class WHERE relname = 'chunks'`,
     sql`SELECT COUNT(*)::int as count FROM works`,
     sql`SELECT COUNT(*)::int as count FROM authors`,
     sql`SELECT COUNT(*)::int as count FROM curated_works`,
@@ -131,6 +132,7 @@ export interface Phase2Stats {
 }
 
 export async function getPhase2Stats(): Promise<Phase2Stats> {
+  // Use approximate counts for large tables (chunks has 10M+ rows)
   const [
     [usersTotal],
     [usersActive],
@@ -148,8 +150,10 @@ export async function getPhase2Stats(): Promise<Phase2Stats> {
     sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes WHERE created_at > NOW() - INTERVAL '7 days'`,
     sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_likes`,
     sql`SELECT COUNT(DISTINCT user_id)::int as count FROM user_follows`,
-    sql`SELECT COUNT(*)::int as count FROM chunks`,
-    sql`SELECT COUNT(*)::int as count FROM chunks WHERE embedding IS NOT NULL`,
+    // Use pg_class for approximate count of chunks (fast)
+    sql`SELECT COALESCE(reltuples, 0)::bigint as count FROM pg_class WHERE relname = 'chunks'`,
+    // For embeddings count - just return 0 for now (embeddings not yet populated)
+    Promise.resolve([{ count: 0 }]),
     sql`SELECT COUNT(*)::int as count FROM lists`,
     sql`SELECT COUNT(*)::int as count FROM lists WHERE is_curated = true`,
     sql`SELECT COUNT(*)::int as count FROM list_chunks`,

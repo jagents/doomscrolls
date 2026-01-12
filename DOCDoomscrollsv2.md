@@ -409,6 +409,8 @@ When you create an account, your local data syncs automatically:
 - Available to all users
 - Cannot be modified by users
 
+**Note:** Lists can be accessed by either ID (UUID) or slug in URLs.
+
 ### 5.4 Sharing Passages
 
 **Share options:**
@@ -529,10 +531,12 @@ The admin dashboard provides monitoring and configuration across four tabs:
 **Corpus Statistics:**
 | Metric | Description |
 |--------|-------------|
-| Total Passages | Number of chunks in database |
+| Total Passages | Number of chunks in database (approximate*) |
 | Works | Number of literary works |
 | Authors | Number of authors |
 | Curated Works | Works selected for main feed |
+
+*Note: Passage count uses PostgreSQL's `pg_class.reltuples` for performance (exact counts on 10M+ rows would take 30+ seconds).
 
 **Category Breakdown:**
 - Lists all 13 categories
