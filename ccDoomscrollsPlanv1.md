@@ -707,6 +707,9 @@ webapp/
 ### 5.3 Core Components
 
 #### Layout Component (`components/layout/Layout.tsx`)
+
+Twitter-style three-column layout with responsive breakpoints:
+
 ```tsx
 import { Outlet } from 'react-router-dom';
 import { LeftSidebar } from './LeftSidebar';
@@ -717,21 +720,21 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-primary text-primary">
       {/* Mobile Navigation */}
-      <MobileNav className="lg:hidden" />
+      <MobileNav />
 
       <div className="flex max-w-[1400px] mx-auto">
         {/* Left Sidebar - Hidden on mobile */}
-        <aside className="hidden lg:flex lg:w-[275px] lg:flex-shrink-0">
+        <aside className="hidden lg:flex lg:w-[275px] lg:flex-shrink-0 sticky top-0 h-screen">
           <LeftSidebar />
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 border-x border-border">
+        {/* Main Content - Twitter-style narrow width */}
+        <main className="flex-1 min-w-0 max-w-[600px] border-x border-border min-h-screen">
           <Outlet />
         </main>
 
-        {/* Right Sidebar - Hidden on mobile/tablet */}
-        <aside className="hidden xl:flex xl:w-[350px] xl:flex-shrink-0">
+        {/* Right Sidebar - Shows at lg breakpoint (1024px) */}
+        <aside className="hidden lg:block lg:w-[300px] lg:flex-shrink-0 sticky top-0 h-screen overflow-y-auto">
           <RightSidebar />
         </aside>
       </div>
@@ -740,52 +743,83 @@ export function Layout() {
 }
 ```
 
+**Layout Widths:**
+- Left sidebar: 275px (hidden on mobile, shows at lg/1024px)
+- Main content: max 600px (matches Twitter's content column)
+- Right sidebar: 300px (hidden on mobile, shows at lg/1024px)
+
 #### Passage Card (`components/feed/PassageCard.tsx`)
+
+Twitter-style layout with avatar, author on top, and actions below:
+
 ```tsx
 import { Link } from 'react-router-dom';
-import { PassageActions } from './PassageActions';
+import { Heart, Bookmark, Share2 } from 'lucide-react';
 import type { Passage } from '../../types';
 
-interface PassageCardProps {
-  passage: Passage;
-}
-
 export function PassageCard({ passage }: PassageCardProps) {
+  // Generate initials from author name for avatar
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  };
+
   return (
-    <article className="p-4 border-b border-border hover:bg-secondary/50 transition-colors">
-      {/* Passage Text */}
-      <blockquote className="text-lg font-serif leading-relaxed mb-3">
-        "{passage.text}"
-      </blockquote>
-
-      {/* Attribution */}
-      <div className="flex items-center gap-2 text-sm text-secondary mb-3">
-        <span>—</span>
-        <Link
-          to={`/author/${passage.author_slug}`}
-          className="hover:underline font-medium"
-        >
-          {passage.author_name}
+    <article className="px-4 py-3 border-b border-border hover:bg-secondary/30 transition-colors">
+      <div className="flex gap-3">
+        {/* Avatar with Author Initials */}
+        <Link to={`/author/${passage.author.slug}`} className="flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
+            {getInitials(passage.author.name)}
+          </div>
         </Link>
-        {passage.work_title && (
-          <>
-            <span>•</span>
-            <Link
-              to={`/work/${passage.work_slug}`}
-              className="hover:underline italic"
-            >
-              {passage.work_title}
-            </Link>
-          </>
-        )}
-      </div>
 
-      {/* Actions */}
-      <PassageActions passage={passage} />
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header: Author · Work */}
+          <div className="flex items-center gap-1 mb-1">
+            <Link to={`/author/${passage.author.slug}`} className="font-bold hover:underline truncate">
+              {passage.author.name}
+            </Link>
+            {passage.work && (
+              <>
+                <span className="text-secondary">·</span>
+                <Link to={`/work/${passage.work.slug}`} className="text-secondary hover:underline truncate">
+                  {passage.work.title}
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Passage Text */}
+          <div className="text-[15px] leading-normal mb-3 whitespace-pre-wrap">
+            {passage.text}
+          </div>
+
+          {/* Actions: Like, Bookmark, Share */}
+          <div className="flex items-center justify-between max-w-md -ml-2">
+            <button className="flex items-center gap-1 text-secondary hover:text-like">
+              <Heart className="w-[18px] h-[18px]" />
+              <span className="text-sm">{passage.like_count}</span>
+            </button>
+            <button className="text-secondary hover:text-accent">
+              <Bookmark className="w-[18px] h-[18px]" />
+            </button>
+            <button className="text-secondary hover:text-accent">
+              <Share2 className="w-[18px] h-[18px]" />
+            </button>
+          </div>
+        </div>
+      </div>
     </article>
   );
 }
 ```
+
+**Layout mirrors Twitter/X:**
+- Circular avatar on left (uses author initials, future: profile images)
+- Author name bold on top, work title as secondary text
+- Passage text in system font (not serif)
+- Action buttons spread across bottom with hover states
 
 #### Infinite Scroll Feed (`components/feed/Feed.tsx`)
 ```tsx
@@ -2016,6 +2050,7 @@ server {
 | Like/Bookmark | ✅ Complete | Optimistic UI + API sync |
 | Theme Toggle | ✅ Complete | Dark/Light modes |
 | Category Filtering | ✅ Complete | 13 categories |
+| Twitter-style Layout | ✅ Complete | Avatar, author on top, 600px content width |
 
 ### Known Limitations (Phase 1)
 

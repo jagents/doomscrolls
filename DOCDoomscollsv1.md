@@ -50,12 +50,14 @@ Modern social media exploits our psychological need for novelty and validation t
 
 #### The Feed
 
-The main feed presents a curated stream of passages from classical literature. Each passage shows:
+The main feed presents a curated stream of passages from classical literature in a Twitter-style layout. Each passage shows:
 
-- The text itself (50-1000 characters for readability)
-- Author name (tap to see more from this author)
-- Work title (tap to explore the complete work)
-- Like count from all users
+- **Avatar** with author's initials (circular, left side)
+- **Author name** (bold, top line - tap to see more from this author)
+- **Work title** (secondary text - tap to explore the complete work)
+- **Passage text** (main content, system font)
+- **Action buttons** (like, bookmark, share - spread across bottom)
+- **Like count** from all users
 
 #### Categories
 
@@ -194,6 +196,10 @@ Enables rapid iteration on feed quality without code changes.
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  React SPA (webapp/dist)                                 │   │
 │  │  - Components (Layout, Feed, PassageCard)               │   │
+│  │  - Twitter-style 3-column layout:                       │   │
+│  │    - Left sidebar: 275px (nav)                          │   │
+│  │    - Main content: max 600px (feed)                     │   │
+│  │    - Right sidebar: 300px (discover)                    │   │
 │  │  - Zustand Stores (feedStore, userStore)                │   │
 │  │  - React Router (/, /explore, /author/:slug, etc.)      │   │
 │  └─────────────────────────────────────────────────────────┘   │
@@ -350,6 +356,34 @@ chunk_stats: {
 | GET | `/api/admin/stats` | Dataset & feed statistics | `{ dataset, feed }` |
 | GET | `/api/admin/config` | Algorithm configuration | `{ config }` |
 | PUT | `/api/admin/config` | Update algorithm settings | `{ config }` |
+
+### UI Design: Twitter-Style Layout
+
+The webapp follows Twitter/X's visual design language for familiarity:
+
+**Three-Column Layout:**
+| Column | Width | Breakpoint | Content |
+|--------|-------|------------|---------|
+| Left Sidebar | 275px | lg (1024px) | Navigation, theme toggle |
+| Main Content | max 600px | Always visible | Feed, pages |
+| Right Sidebar | 300px | lg (1024px) | Discover authors, categories |
+
+**PassageCard Design:**
+```
+┌─────────────────────────────────────────────────────┐
+│ [MA]  Marcus Aurelius · Meditations                 │
+│       ─────────────────────────────────────────     │
+│       The happiness of your life depends upon      │
+│       the quality of your thoughts...              │
+│       ─────────────────────────────────────────     │
+│       [♡ 42]        [🔖]           [↗]             │
+└─────────────────────────────────────────────────────┘
+```
+
+- Circular avatar with author initials (future: profile images)
+- Author name bold, work title as secondary text
+- System font stack (not serif) for modern feel
+- Action buttons with hover states and fill on active
 
 ### Security Considerations
 
