@@ -76,6 +76,25 @@ admin.put('/config', async (c) => {
   }
 
   // ============================================================================
+  // CONTENT TYPE DIVERSITY SETTINGS
+  // ============================================================================
+  if (typeof body.typeDiversityEnabled === 'boolean') {
+    updates.typeDiversityEnabled = body.typeDiversityEnabled;
+  }
+  if (typeof body.proseRatio === 'number' && body.proseRatio >= 0 && body.proseRatio <= 100) {
+    updates.proseRatio = body.proseRatio;
+  }
+  if (typeof body.quoteRatio === 'number' && body.quoteRatio >= 0 && body.quoteRatio <= 100) {
+    updates.quoteRatio = body.quoteRatio;
+  }
+  if (typeof body.poetryRatio === 'number' && body.poetryRatio >= 0 && body.poetryRatio <= 100) {
+    updates.poetryRatio = body.poetryRatio;
+  }
+  if (typeof body.speechRatio === 'number' && body.speechRatio >= 0 && body.speechRatio <= 100) {
+    updates.speechRatio = body.speechRatio;
+  }
+
+  // ============================================================================
   // PERSONALIZATION MASTER SETTINGS
   // ============================================================================
   if (typeof body.enablePersonalization === 'boolean') {

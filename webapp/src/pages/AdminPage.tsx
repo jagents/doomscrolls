@@ -475,6 +475,146 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
         )}
       </div>
 
+      {/* Content Type Diversity Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-lg">Content Type Mix</h3>
+          <button
+            onClick={() => handleChange('typeDiversityEnabled', !config.typeDiversityEnabled)}
+            className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
+              config.typeDiversityEnabled
+                ? 'bg-accent text-white'
+                : 'bg-secondary text-secondary'
+            }`}
+          >
+            {config.typeDiversityEnabled ? 'Enabled' : 'Disabled'}
+          </button>
+        </div>
+
+        {config.typeDiversityEnabled && (
+          <div className="bg-secondary/50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-medium">Target Type Mix</span>
+              <span className={`text-sm ${
+                (config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio) === 100
+                  ? 'text-green-500'
+                  : 'text-yellow-500'
+              }`}>
+                Total: {config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio}%
+              </span>
+            </div>
+
+            {/* Visual bar */}
+            <div className="flex h-4 rounded-full overflow-hidden mb-4">
+              <div
+                className="bg-indigo-500 transition-all"
+                style={{ width: `${(config.proseRatio / Math.max(config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio, 1)) * 100}%` }}
+                title="Prose"
+              />
+              <div
+                className="bg-amber-500 transition-all"
+                style={{ width: `${(config.quoteRatio / Math.max(config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio, 1)) * 100}%` }}
+                title="Quotes"
+              />
+              <div
+                className="bg-pink-500 transition-all"
+                style={{ width: `${(config.poetryRatio / Math.max(config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio, 1)) * 100}%` }}
+                title="Poetry"
+              />
+              <div
+                className="bg-emerald-500 transition-all"
+                style={{ width: `${(config.speechRatio / Math.max(config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio, 1)) * 100}%` }}
+                title="Speech"
+              />
+            </div>
+
+            {/* Individual sliders */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="w-20 text-sm font-medium text-indigo-500">Prose %</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={config.proseRatio}
+                  onChange={(e) => handleChange('proseRatio', parseInt(e.target.value))}
+                  className="flex-1 accent-accent"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={config.proseRatio}
+                  onChange={(e) => handleChange('proseRatio', parseInt(e.target.value) || 0)}
+                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-20 text-sm font-medium text-amber-500">Quote %</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={config.quoteRatio}
+                  onChange={(e) => handleChange('quoteRatio', parseInt(e.target.value))}
+                  className="flex-1 accent-accent"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={config.quoteRatio}
+                  onChange={(e) => handleChange('quoteRatio', parseInt(e.target.value) || 0)}
+                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-20 text-sm font-medium text-pink-500">Poetry %</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={config.poetryRatio}
+                  onChange={(e) => handleChange('poetryRatio', parseInt(e.target.value))}
+                  className="flex-1 accent-accent"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={config.poetryRatio}
+                  onChange={(e) => handleChange('poetryRatio', parseInt(e.target.value) || 0)}
+                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-20 text-sm font-medium text-emerald-500">Speech %</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={config.speechRatio}
+                  onChange={(e) => handleChange('speechRatio', parseInt(e.target.value))}
+                  className="flex-1 accent-accent"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={config.speechRatio}
+                  onChange={(e) => handleChange('speechRatio', parseInt(e.target.value) || 0)}
+                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-secondary mt-3">
+              Prose: novels, passages, sections | Quotes: quotes, sayings | Poetry: verses, poems | Speech: speeches
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Personalization Section */}
       <PersonalizationSection config={config} onChange={handleChange} />
 

@@ -33,7 +33,7 @@ function shuffle<T>(array: T[]): T[] {
 }
 
 // Calculate how many of each length bucket we need
-function calculateBucketCounts(limit: number, config: FeedAlgorithmConfig): { short: number; medium: number; long: number } {
+function calculateLengthBucketCounts(limit: number, config: FeedAlgorithmConfig): { short: number; medium: number; long: number } {
   const totalRatio = config.shortRatio + config.mediumRatio + config.longRatio;
   if (totalRatio === 0) {
     return { short: Math.ceil(limit / 3), medium: Math.ceil(limit / 3), long: Math.ceil(limit / 3) };
@@ -44,6 +44,270 @@ function calculateBucketCounts(limit: number, config: FeedAlgorithmConfig): { sh
   const medium = limit - short - long; // Remainder goes to medium
 
   return { short, medium, long };
+}
+
+// Calculate how many of each content type bucket we need
+function calculateTypeBucketCounts(limit: number, config: FeedAlgorithmConfig): { prose: number; quote: number; poetry: number; speech: number } {
+  const totalRatio = config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio;
+  if (totalRatio === 0) {
+    return { prose: limit, quote: 0, poetry: 0, speech: 0 };
+  }
+
+  const prose = Math.round((config.proseRatio / totalRatio) * limit);
+  const quote = Math.round((config.quoteRatio / totalRatio) * limit);
+  const poetry = Math.round((config.poetryRatio / totalRatio) * limit);
+  const speech = limit - prose - quote - poetry; // Remainder goes to speech
+
+  return { prose, quote, poetry, speech };
+}
+
+// Content type groupings
+const TYPE_GROUPS = {
+  prose: [null, 'passage', 'section', 'chapter'],
+  quote: ['quote', 'saying'],
+  poetry: ['verse', 'poem', 'verse_group'],
+  speech: ['speech'],
+};
+
+// Query passages by content type
+async function queryPassagesByType(
+  typeGroup: 'prose' | 'quote' | 'poetry' | 'speech',
+  limit: number,
+  config: FeedAlgorithmConfig,
+  category: string | undefined,
+  cursorData: CursorData,
+  hasCuratedWorks: boolean
+): Promise<any[]> {
+  if (limit <= 0) return [];
+
+  const types = TYPE_GROUPS[typeGroup];
+  const hasNull = types.includes(null);
+  const nonNullTypes = types.filter((t): t is string => t !== null);
+
+  // Build type condition
+  const typeCondition = hasNull
+    ? nonNullTypes.length > 0
+      ? sql`AND (c.type IS NULL OR c.type IN ${sql(nonNullTypes)})`
+      : sql`AND c.type IS NULL`
+    : sql`AND c.type IN ${sql(nonNullTypes)}`;
+
+  if (category && category !== 'for-you') {
+    if (hasCuratedWorks) {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN curated_works cw ON c.work_id = cw.work_id
+        JOIN work_categories wc ON c.work_id = wc.work_id
+        JOIN categories cat ON wc.category_id = cat.id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE cat.slug = ${category}
+          AND LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          ${typeCondition}
+          ${cursorData.recentAuthors.length > 0
+            ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
+            : sql``}
+          ${cursorData.recentWorks.length > 0
+            ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}`
+            : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    } else {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN work_categories wc ON c.work_id = wc.work_id
+        JOIN categories cat ON wc.category_id = cat.id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE cat.slug = ${category}
+          AND LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          ${typeCondition}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    }
+  } else {
+    if (hasCuratedWorks) {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN curated_works cw ON c.work_id = cw.work_id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          ${typeCondition}
+          ${cursorData.recentAuthors.length > 0
+            ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
+            : sql``}
+          ${cursorData.recentWorks.length > 0
+            ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}`
+            : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    } else {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          AND w.chunk_count > 10
+          ${typeCondition}
+          ${cursorData.recentAuthors.length > 0
+            ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
+            : sql``}
+          ${cursorData.recentWorks.length > 0
+            ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}`
+            : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    }
+  }
+}
+
+// Query passages by both content type AND length range (for combined diversity)
+async function queryPassagesByTypeAndLength(
+  typeGroup: 'prose' | 'quote' | 'poetry' | 'speech',
+  minLen: number,
+  maxLen: number,
+  limit: number,
+  category: string | undefined,
+  cursorData: CursorData,
+  hasCuratedWorks: boolean
+): Promise<any[]> {
+  if (limit <= 0) return [];
+
+  const types = TYPE_GROUPS[typeGroup];
+  const hasNull = types.includes(null);
+  const nonNullTypes = types.filter((t): t is string => t !== null);
+
+  // Build type condition
+  const typeCondition = hasNull
+    ? nonNullTypes.length > 0
+      ? sql`AND (c.type IS NULL OR c.type IN ${sql(nonNullTypes)})`
+      : sql`AND c.type IS NULL`
+    : sql`AND c.type IN ${sql(nonNullTypes)}`;
+
+  if (category && category !== 'for-you') {
+    if (hasCuratedWorks) {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN curated_works cw ON c.work_id = cw.work_id
+        JOIN work_categories wc ON c.work_id = wc.work_id
+        JOIN categories cat ON wc.category_id = cat.id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE cat.slug = ${category}
+          AND LENGTH(c.text) BETWEEN ${minLen} AND ${maxLen}
+          ${typeCondition}
+          ${cursorData.recentAuthors.length > 0
+            ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
+            : sql``}
+          ${cursorData.recentWorks.length > 0
+            ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}`
+            : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    } else {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN work_categories wc ON c.work_id = wc.work_id
+        JOIN categories cat ON wc.category_id = cat.id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE cat.slug = ${category}
+          AND LENGTH(c.text) BETWEEN ${minLen} AND ${maxLen}
+          ${typeCondition}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    }
+  } else {
+    if (hasCuratedWorks) {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN curated_works cw ON c.work_id = cw.work_id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE LENGTH(c.text) BETWEEN ${minLen} AND ${maxLen}
+          ${typeCondition}
+          ${cursorData.recentAuthors.length > 0
+            ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
+            : sql``}
+          ${cursorData.recentWorks.length > 0
+            ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}`
+            : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    } else {
+      return sql`
+        SELECT
+          c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE LENGTH(c.text) BETWEEN ${minLen} AND ${maxLen}
+          AND w.chunk_count > 10
+          ${typeCondition}
+          ${cursorData.recentAuthors.length > 0
+            ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
+            : sql``}
+          ${cursorData.recentWorks.length > 0
+            ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}`
+            : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+    }
+  }
 }
 
 // Query passages for a specific length range
@@ -169,29 +433,151 @@ export async function generateFeed(options: FeedOptions): Promise<FeedResponse> 
 
   let passages: any[];
 
-  if (config.lengthDiversityEnabled) {
-    // Query each length bucket separately and combine
-    const buckets = calculateBucketCounts(limit, config);
+  // Define length ranges
+  const shortMin = config.minLength;
+  const shortMax = config.shortMaxLength;
+  const mediumMin = config.shortMaxLength + 1;
+  const mediumMax = config.longMinLength - 1;
+  const longMin = config.longMinLength;
+  const longMax = config.maxLength;
 
-    // Define length ranges for each bucket
-    const shortMin = config.minLength;
-    const shortMax = config.shortMaxLength;
-    const mediumMin = config.shortMaxLength + 1;
-    const mediumMax = config.longMinLength - 1;
-    const longMin = config.longMinLength;
-    const longMax = config.maxLength;
+  if (config.typeDiversityEnabled) {
+    // Type diversity using single query + post-processing
+    // This is faster than parallel queries due to Neon connection pooling
+    const typeBuckets = calculateTypeBucketCounts(limit, config);
 
-    // Query all buckets in parallel
+    // Query extra to allow for type selection
+    // Need large sample because poetry/speech are <1% of curated works
+    const queryLimit = Math.min(limit * 15, 300);
+
+    let allPassages: any[];
+    if (category && category !== 'for-you') {
+      if (hasCuratedWorks) {
+        allPassages = await sql`
+          SELECT c.id, c.text, c.type,
+            c.author_id, a.name as author_name, a.slug as author_slug,
+            c.work_id, w.title as work_title, w.slug as work_slug,
+            COALESCE(cs.like_count, 0) as like_count
+          FROM chunks c
+          JOIN curated_works cw ON c.work_id = cw.work_id
+          JOIN work_categories wc ON c.work_id = wc.work_id
+          JOIN categories cat ON wc.category_id = cat.id
+          JOIN authors a ON c.author_id = a.id
+          LEFT JOIN works w ON c.work_id = w.id
+          LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+          WHERE cat.slug = ${category}
+            AND LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+            ${cursorData.recentAuthors.length > 0 ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}` : sql``}
+            ${cursorData.recentWorks.length > 0 ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}` : sql``}
+          ORDER BY RANDOM()
+          LIMIT ${queryLimit}
+        `;
+      } else {
+        allPassages = await sql`
+          SELECT c.id, c.text, c.type,
+            c.author_id, a.name as author_name, a.slug as author_slug,
+            c.work_id, w.title as work_title, w.slug as work_slug,
+            COALESCE(cs.like_count, 0) as like_count
+          FROM chunks c
+          JOIN work_categories wc ON c.work_id = wc.work_id
+          JOIN categories cat ON wc.category_id = cat.id
+          JOIN authors a ON c.author_id = a.id
+          LEFT JOIN works w ON c.work_id = w.id
+          LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+          WHERE cat.slug = ${category}
+            AND LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          ORDER BY RANDOM()
+          LIMIT ${queryLimit}
+        `;
+      }
+    } else if (hasCuratedWorks) {
+      allPassages = await sql`
+        SELECT c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN curated_works cw ON c.work_id = cw.work_id
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          ${cursorData.recentAuthors.length > 0 ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}` : sql``}
+          ${cursorData.recentWorks.length > 0 ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}` : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${queryLimit}
+      `;
+    } else {
+      allPassages = await sql`
+        SELECT c.id, c.text, c.type,
+          c.author_id, a.name as author_name, a.slug as author_slug,
+          c.work_id, w.title as work_title, w.slug as work_slug,
+          COALESCE(cs.like_count, 0) as like_count
+        FROM chunks c
+        JOIN authors a ON c.author_id = a.id
+        LEFT JOIN works w ON c.work_id = w.id
+        LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
+        WHERE LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
+          AND w.chunk_count > 10
+          ${cursorData.recentAuthors.length > 0 ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}` : sql``}
+          ${cursorData.recentWorks.length > 0 ? sql`AND c.work_id NOT IN ${sql(cursorData.recentWorks)}` : sql``}
+        ORDER BY RANDOM()
+        LIMIT ${queryLimit}
+      `;
+    }
+
+    // Categorize passages by type
+    const getTypeCategory = (type: string | null): 'prose' | 'quote' | 'poetry' | 'speech' => {
+      if (type === null || type === 'passage' || type === 'section' || type === 'chapter') return 'prose';
+      if (type === 'quote' || type === 'saying') return 'quote';
+      if (type === 'verse' || type === 'poem' || type === 'verse_group') return 'poetry';
+      if (type === 'speech') return 'speech';
+      return 'prose';
+    };
+
+    const byType: Record<string, any[]> = { prose: [], quote: [], poetry: [], speech: [] };
+    for (const p of allPassages) {
+      byType[getTypeCategory(p.type)].push(p);
+    }
+
+    // Take from each bucket up to target, fill shortfalls with prose
+    const selected: any[] = [];
+    let remaining = limit;
+
+    // First take speech (smallest ratio, least available)
+    const speechTake = Math.min(typeBuckets.speech, byType.speech.length, remaining);
+    selected.push(...byType.speech.slice(0, speechTake));
+    remaining -= speechTake;
+
+    // Then poetry
+    const poetryTake = Math.min(typeBuckets.poetry, byType.poetry.length, remaining);
+    selected.push(...byType.poetry.slice(0, poetryTake));
+    remaining -= poetryTake;
+
+    // Then quotes (likely 0 in curated)
+    const quoteTake = Math.min(typeBuckets.quote, byType.quote.length, remaining);
+    selected.push(...byType.quote.slice(0, quoteTake));
+    remaining -= quoteTake;
+
+    // Fill rest with prose
+    selected.push(...byType.prose.slice(0, remaining));
+
+    passages = shuffle(selected);
+
+  } else if (config.lengthDiversityEnabled) {
+    // Length diversity only
+    const buckets = calculateLengthBucketCounts(limit, config);
+
     const [shortPassages, mediumPassages, longPassages] = await Promise.all([
       queryPassagesByLength(shortMin, shortMax, buckets.short, category, cursorData, hasCuratedWorks),
       queryPassagesByLength(mediumMin, mediumMax, buckets.medium, category, cursorData, hasCuratedWorks),
       queryPassagesByLength(longMin, longMax, buckets.long, category, cursorData, hasCuratedWorks),
     ]);
 
-    // Combine and shuffle
     passages = shuffle([...shortPassages, ...mediumPassages, ...longPassages]);
+
   } else {
-    // Original behavior: single query with min/max length
+    // No diversity: single query with min/max length
     passages = await queryPassagesByLength(
       config.minLength,
       config.maxLength,

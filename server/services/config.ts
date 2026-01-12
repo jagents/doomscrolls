@@ -15,6 +15,13 @@ export interface FeedAlgorithmConfig {
   mediumRatio: number;         // Target % medium (0-100)
   longRatio: number;           // Target % long (0-100)
 
+  // Content type diversity settings
+  typeDiversityEnabled: boolean;
+  proseRatio: number;          // Target % prose (null, passage, section, chapter)
+  quoteRatio: number;          // Target % quotes (quote, saying)
+  poetryRatio: number;         // Target % poetry (verse, poem, verse_group)
+  speechRatio: number;         // Target % speeches (speech)
+
   // Personalization master settings
   enablePersonalization: boolean;
   minSignalsForPersonalization: number;  // Min likes/bookmarks before enabling
@@ -60,6 +67,13 @@ const DEFAULT_CONFIG: FeedAlgorithmConfig = {
   shortRatio: 30,
   mediumRatio: 40,
   longRatio: 30,
+
+  // Content type diversity
+  typeDiversityEnabled: true,
+  proseRatio: 20,
+  quoteRatio: 45,
+  poetryRatio: 30,
+  speechRatio: 5,
 
   // Personalization master settings
   enablePersonalization: true,

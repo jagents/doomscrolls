@@ -415,6 +415,13 @@ export interface FeedAlgorithmConfig {
   mediumRatio: number;
   longRatio: number;
 
+  // Content type diversity settings
+  typeDiversityEnabled: boolean;
+  proseRatio: number;
+  quoteRatio: number;
+  poetryRatio: number;
+  speechRatio: number;
+
   // Personalization master settings
   enablePersonalization: boolean;
   minSignalsForPersonalization: number;
