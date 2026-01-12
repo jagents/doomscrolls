@@ -5,6 +5,7 @@ import { authors } from './authors';
 import { works } from './works';
 import { categories } from './categories';
 import { discover } from './discover';
+import { admin } from './admin';
 
 const routes = new Hono();
 
@@ -14,5 +15,6 @@ routes.route('/authors', authors);
 routes.route('/works', works);
 routes.route('/categories', categories);
 routes.route('/discover', discover);
+routes.route('/admin', admin);
 
 export { routes };

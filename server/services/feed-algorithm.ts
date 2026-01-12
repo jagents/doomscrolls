@@ -1,16 +1,7 @@
 import { sql } from '../db/client';
 import { formatPassage } from './formatters';
+import { getFeedConfig } from './config';
 import type { FeedOptions, FeedResponse, CursorData } from '../types';
-
-interface FeedConfig {
-  maxAuthorRepeat: number;
-  maxWorkRepeat: number;
-}
-
-const DEFAULT_CONFIG: FeedConfig = {
-  maxAuthorRepeat: 10,
-  maxWorkRepeat: 20,
-};
 
 function encodeCursor(data: CursorData): string {
   return Buffer.from(JSON.stringify(data)).toString('base64');
@@ -26,6 +17,9 @@ function decodeCursor(cursor: string): CursorData {
 
 export async function generateFeed(options: FeedOptions): Promise<FeedResponse> {
   const { category, limit, cursor } = options;
+
+  // Get config from database
+  const config = await getFeedConfig();
 
   const cursorData = cursor ? decodeCursor(cursor) : {
     recentAuthors: [],
@@ -56,7 +50,7 @@ export async function generateFeed(options: FeedOptions): Promise<FeedResponse> 
         LEFT JOIN works w ON c.work_id = w.id
         LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
         WHERE cat.slug = ${category}
-          AND LENGTH(c.text) BETWEEN 50 AND 1000
+          AND LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
           ${cursorData.recentAuthors.length > 0
             ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
             : sql``}
@@ -81,7 +75,7 @@ export async function generateFeed(options: FeedOptions): Promise<FeedResponse> 
         LEFT JOIN works w ON c.work_id = w.id
         LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
         WHERE cat.slug = ${category}
-          AND LENGTH(c.text) BETWEEN 50 AND 1000
+          AND LENGTH(c.text) BETWEEN ${config.minLength} AND ${config.maxLength}
         ORDER BY RANDOM()
         LIMIT ${limit}
       `;
@@ -140,12 +134,12 @@ export async function generateFeed(options: FeedOptions): Promise<FeedResponse> 
   const newRecentAuthors = [
     ...cursorData.recentAuthors,
     ...passages.map((p: any) => p.author_id),
-  ].slice(-DEFAULT_CONFIG.maxAuthorRepeat);
+  ].slice(-config.maxAuthorRepeat);
 
   const newRecentWorks = [
     ...cursorData.recentWorks,
     ...passages.filter((p: any) => p.work_id).map((p: any) => p.work_id),
-  ].slice(-DEFAULT_CONFIG.maxWorkRepeat);
+  ].slice(-config.maxWorkRepeat);
 
   const nextCursor = passages.length > 0 ? encodeCursor({
     recentAuthors: newRecentAuthors,

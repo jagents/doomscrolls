@@ -224,6 +224,27 @@ async function main() {
     await sql`CREATE INDEX IF NOT EXISTS idx_work_categories_category ON work_categories(category_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_work_categories_work ON work_categories(work_id)`;
 
+    // App config table for admin dashboard
+    await sql`
+      CREATE TABLE IF NOT EXISTS app_config (
+        key TEXT PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+
+    // Seed default feed algorithm config
+    await sql`
+      INSERT INTO app_config (key, value) VALUES
+        ('feed_algorithm', ${sql.json({
+          maxAuthorRepeat: 10,
+          maxWorkRepeat: 20,
+          minLength: 50,
+          maxLength: 1000
+        })})
+      ON CONFLICT (key) DO NOTHING
+    `;
+
     console.log('Tables created successfully\n');
 
     // Seed data

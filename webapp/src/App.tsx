@@ -7,6 +7,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AuthorPage } from './pages/AuthorPage';
 import { WorkPage } from './pages/WorkPage';
 import { PassagePage } from './pages/PassagePage';
+import { AdminPage } from './pages/AdminPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="work/:slug" element={<WorkPage />} />
           <Route path="passage/:id" element={<PassagePage />} />
         </Route>
+        <Route path="admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );

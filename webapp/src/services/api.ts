@@ -74,4 +74,53 @@ export const api = {
 
   discoverWorks: (limit?: number) =>
     request<{ works: Work[] }>(`/discover/works?limit=${limit || 5}`),
+
+  // Admin
+  getAdminStats: () => request<{
+    dataset: {
+      chunks: number;
+      works: number;
+      authors: number;
+      curatedWorks: number;
+      categories: number;
+      categoryBreakdown: Array<{ name: string; slug: string; icon: string; workCount: number }>;
+    };
+    feed: {
+      totalLikes: number;
+      totalViews: number;
+      topPassages: Array<{
+        id: string;
+        text: string;
+        authorName: string;
+        workTitle: string | null;
+        likeCount: number;
+      }>;
+    };
+  }>('/admin/stats'),
+
+  getAdminConfig: () => request<{
+    config: {
+      maxAuthorRepeat: number;
+      maxWorkRepeat: number;
+      minLength: number;
+      maxLength: number;
+    };
+  }>('/admin/config'),
+
+  updateAdminConfig: (config: {
+    maxAuthorRepeat?: number;
+    maxWorkRepeat?: number;
+    minLength?: number;
+    maxLength?: number;
+  }) => request<{
+    config: {
+      maxAuthorRepeat: number;
+      maxWorkRepeat: number;
+      minLength: number;
+      maxLength: number;
+    };
+  }>('/admin/config', {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  }),
 };
