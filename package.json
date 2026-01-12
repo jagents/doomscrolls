@@ -12,9 +12,14 @@
     "ingest:all": "bun run scripts/ingest.ts --all"
   },
   "dependencies": {
+    "@types/stream-json": "^1.7.8",
+    "@types/uuid": "^11.0.0",
     "adm-zip": "^0.5.16",
     "cheerio": "^1.0.0",
-    "fast-xml-parser": "^5.3.3"
+    "fast-xml-parser": "^5.3.3",
+    "pg": "^8.16.3",
+    "stream-json": "^1.9.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
