@@ -35,8 +35,9 @@ Build the Phase 1 MVP of Doomscrolls: a Twitter-like infinite scroll experience 
 4. **Local Storage** - Likes/bookmarks stored client-side (no accounts in Phase 1)
 
 ### Tech Stack
-- **Runtime:** Bun
-- **API Framework:** Hono
+- **Runtime:** Node.js 20+ with tsx (TypeScript execution)
+- **Process Manager:** PM2
+- **API Framework:** Hono (with @hono/node-server adapter)
 - **Database:** Neon PostgreSQL (existing, 10.3M chunks)
 - **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS
 - **State Management:** Zustand
@@ -108,8 +109,8 @@ Build the Phase 1 MVP of Doomscrolls: a Twitter-like infinite scroll experience 
 
 **New Dependencies to Install:**
 ```bash
-bun add hono @hono/node-server postgres
-bun add -d @types/node
+npm install hono @hono/node-server postgres dotenv
+npm install -D typescript tsx @types/node
 ```
 
 **Directory Structure:**
@@ -169,19 +170,20 @@ export async function testConnection() {
 
 **File: `server/index.ts`**
 ```typescript
-import { serve } from 'bun';
+import 'dotenv/config';
+import { serve } from '@hono/node-server';
 import { app } from './app';
 
-const PORT = process.env.PORT || 4800;
+const PORT = parseInt(process.env.PORT || '4800', 10);
 
 console.log(`🚀 Doomscrolls API starting on port ${PORT}`);
 
 serve({
   fetch: app.fetch,
   port: PORT,
+}, (info) => {
+  console.log(`✅ Server running at http://localhost:${info.port}`);
 });
-
-console.log(`✅ Server running at http://localhost:${PORT}`);
 ```
 
 **File: `server/app.ts`**
@@ -575,10 +577,11 @@ export function errorHandler(err: Error, c: Context) {
 ```bash
 cd /aiprojects/doomscrolls
 mkdir webapp && cd webapp
-bun create vite . --template react-ts
-bun add tailwindcss postcss autoprefixer @tailwindcss/typography
-bun add zustand react-router-dom
-bun add -d @types/react @types/react-dom
+npm create vite@latest . -- --template react-ts
+npm install
+npm install tailwindcss postcss autoprefixer @tailwindcss/typography
+npm install zustand react-router-dom lucide-react
+npm install -D @types/react @types/react-dom
 npx tailwindcss init -p
 ```
 
@@ -1577,13 +1580,14 @@ export interface Work {
 
 #### Phase 1A: Backend Foundation (Days 1-2)
 1. ☐ Create `server/` directory structure
-2. ☐ Install dependencies: `bun add hono postgres`
-3. ☐ Set up database connection (`server/db/client.ts`)
-4. ☐ Create and run schema migrations (`server/db/schema.sql`)
-5. ☐ Seed categories table
-6. ☐ Create curated works seed script and run it
-7. ☐ Implement basic Hono server with health endpoint
-8. ☐ Test: `curl http://localhost:4800/health`
+2. ☐ Install dependencies: `npm install hono @hono/node-server postgres dotenv`
+3. ☐ Install dev dependencies: `npm install -D typescript tsx @types/node`
+4. ☐ Set up database connection (`server/db/client.ts`)
+5. ☐ Create and run schema migrations (`server/db/schema.sql`)
+6. ☐ Seed categories table
+7. ☐ Create curated works seed script and run it
+8. ☐ Implement basic Hono server with health endpoint
+9. ☐ Test: `curl http://localhost:4800/health`
 
 #### Phase 1B: Core API Routes (Days 2-3)
 1. ☐ Implement feed algorithm (`server/services/feed-algorithm.ts`)
@@ -1633,8 +1637,8 @@ export interface Work {
 4. ☐ Add error states
 5. ☐ Responsive testing (mobile/tablet/desktop)
 6. ☐ Performance optimization
-7. ☐ Build production webapp: `bun run build`
-8. ☐ Configure PM2 for API
+7. ☐ Build production webapp: `cd webapp && npm run build`
+8. ☐ Configure PM2 for API: `pm2 start ecosystem.config.js`
 9. ☐ Configure Nginx for webapp serving
 10. ☐ SSL setup with Let's Encrypt
 11. ☐ Final testing
@@ -1794,6 +1798,31 @@ NODE_ENV=development
 # REDIS_URL=...
 ```
 
+**File: `.env.example`** (commit this to git)
+```bash
+# Database - Get from Neon dashboard
+NEON_DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
+
+# Server
+PORT=4800
+NODE_ENV=development
+```
+
+## Appendix A.1: Package.json Scripts
+
+**Add to root `package.json`:**
+```json
+{
+  "scripts": {
+    "dev": "tsx watch server/index.ts",
+    "start": "tsx server/index.ts",
+    "build": "cd webapp && npm run build",
+    "db:seed": "tsx server/db/seed.ts",
+    "db:migrate": "tsx server/db/migrate.ts"
+  }
+}
+```
+
 ---
 
 ## Appendix B: PM2 Ecosystem Config
@@ -1803,8 +1832,8 @@ NODE_ENV=development
 module.exports = {
   apps: [{
     name: 'doomscrolls-api',
-    script: 'server/index.ts',
-    interpreter: 'bun',
+    script: './server/index.ts',
+    interpreter: './node_modules/.bin/tsx',
     instances: 1,
     autorestart: true,
     watch: false,
@@ -1819,6 +1848,22 @@ module.exports = {
     },
   }],
 };
+```
+
+**Running the Server:**
+```bash
+# Development (with auto-reload)
+npx tsx watch server/index.ts
+
+# Production (with PM2)
+pm2 start ecosystem.config.js --env production
+
+# PM2 useful commands
+pm2 logs doomscrolls-api    # View logs
+pm2 restart doomscrolls-api # Restart
+pm2 stop doomscrolls-api    # Stop
+pm2 delete doomscrolls-api  # Remove from PM2
+pm2 monit                   # Monitor dashboard
 ```
 
 ---
