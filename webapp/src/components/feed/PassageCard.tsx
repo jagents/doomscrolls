@@ -56,8 +56,8 @@ export function PassageCard({ passage }: PassageCardProps) {
   return (
     <article className="p-4 border-b border-border hover:bg-secondary/30 transition-colors">
       {/* Passage Text */}
-      <blockquote className="text-lg leading-relaxed mb-3" style={{ fontFamily: 'Georgia, serif' }}>
-        "{passage.text}"
+      <blockquote className="text-lg leading-relaxed mb-3">
+        {passage.text}
       </blockquote>
 
       {/* Attribution */}
