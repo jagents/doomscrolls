@@ -2058,4 +2058,111 @@ npx tsx server/index.ts
 
 ---
 
+## Appendix E: Admin Dashboard
+
+### Overview
+
+Admin dashboard for monitoring and configuring the Doomscrolls application.
+
+- **URL:** `http://localhost:4800/admin`
+- **Phase 1:** No authentication (localhost only, assume trusted)
+- **Phase 2+:** Add authentication layer
+
+### Dashboard Tabs
+
+#### Tab 1: Dataset Stats
+- Total chunks, works, authors counts
+- Curated works count
+- Category breakdown with work counts
+- Database connection status
+
+#### Tab 2: Feed Stats
+- Total likes across all passages
+- Most liked passages (top 10)
+- Feed requests today (from rate limit data)
+
+#### Tab 3: Algorithm Settings
+
+**Diversity Controls:**
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `maxAuthorRepeat` | 10 | Same author appears max 1 in N passages |
+| `maxWorkRepeat` | 20 | Same work appears max 1 in N passages |
+
+**Content Length Filter:**
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `minLength` | 50 | Minimum passage character length |
+| `maxLength` | 1000 | Maximum passage character length |
+
+Settings are persisted to database and applied immediately to feed algorithm.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/stats` | Dataset and feed statistics |
+| GET | `/api/admin/config` | Current algorithm configuration |
+| PUT | `/api/admin/config` | Update algorithm configuration |
+
+### Database Schema
+
+```sql
+-- Algorithm configuration storage
+CREATE TABLE IF NOT EXISTS app_config (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Default config values
+INSERT INTO app_config (key, value) VALUES
+  ('feed_algorithm', '{
+    "maxAuthorRepeat": 10,
+    "maxWorkRepeat": 20,
+    "minLength": 50,
+    "maxLength": 1000
+  }'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+```
+
+### Frontend Components
+
+```
+webapp/src/
+├── pages/
+│   └── AdminPage.tsx           # Main admin dashboard
+├── components/
+│   └── admin/
+│       ├── AdminLayout.tsx     # Admin-specific layout
+│       ├── StatsTab.tsx        # Dataset statistics
+│       ├── FeedStatsTab.tsx    # Feed/engagement stats
+│       └── AlgorithmTab.tsx    # Algorithm settings form
+```
+
+### Implementation Files
+
+**Backend:**
+- `server/routes/admin.ts` - Admin API routes
+- `server/services/admin-stats.ts` - Statistics queries
+- `server/services/config.ts` - Config read/write
+
+**Frontend:**
+- `webapp/src/pages/AdminPage.tsx` - Dashboard page
+- `webapp/src/components/admin/*` - Tab components
+
+### Phase 2+ Expansion Points
+
+Future additions to admin dashboard:
+- User analytics and engagement metrics
+- A/B testing controls for feed algorithm
+- Content moderation queue
+- Category management (add/edit/delete)
+- Curated works editor (add/remove works)
+- Real-time feed preview
+- Export/import configuration
+- Audit log of config changes
+
+---
+
 *End of Phase 1 Coding Plan*
