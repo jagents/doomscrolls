@@ -1,7 +1,8 @@
 # Doomscrolls Phase 1 Coding Plan v1
 
 **Created:** January 12, 2026
-**Status:** Ready for Implementation
+**Updated:** January 12, 2026
+**Status:** ✅ Phase 1 MVP Implemented
 **Target:** Backend API + Web App (Server-side development)
 
 ---
@@ -26,10 +27,10 @@
 ## 1. Executive Summary
 
 ### Goal
-Build the Phase 1 MVP of Doomscrolls: a Twitter-like infinite scroll experience for classical literature, running on port 4800 (API) with a React webapp.
+Build the Phase 1 MVP of Doomscrolls: a Twitter-like infinite scroll experience for classical literature, running on port 4800 (single port serves both API and webapp).
 
 ### Deliverables
-1. **Hono API Server** - RESTful backend serving passages, authors, works
+1. **Hono API Server** - RESTful backend serving passages, authors, works + static webapp files
 2. **React Web App** - Twitter-style UI with infinite scroll feed
 3. **Feed Algorithm** - Diversity-protected content selection from curated top works
 4. **Local Storage** - Likes/bookmarks stored client-side (no accounts in Phase 1)
@@ -77,18 +78,24 @@ Build the Phase 1 MVP of Doomscrolls: a Twitter-like infinite scroll experience 
 │                        PHASE 1 ARCHITECTURE                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────┐ │
-│  │   Browser    │────▶│  React App   │────▶│   Hono API       │ │
-│  │   (User)     │     │  (Vite/5173) │     │   (Port 4800)    │ │
-│  └──────────────┘     └──────────────┘     └────────┬─────────┘ │
-│                                                      │           │
-│                                                      ▼           │
-│                                            ┌──────────────────┐  │
-│                                            │ Neon PostgreSQL  │  │
-│                                            │ (10.3M chunks)   │  │
-│                                            └──────────────────┘  │
+│  ┌──────────────┐                   ┌──────────────────────────┐ │
+│  │   Browser    │──────────────────▶│   Hono Server            │ │
+│  │   (User)     │                   │   (Port 4800)            │ │
+│  └──────────────┘                   │                          │ │
+│                                     │   /api/*  → API routes   │ │
+│                                     │   /*      → webapp/dist  │ │
+│                                     └───────────┬──────────────┘ │
+│                                                 │                │
+│                                                 ▼                │
+│                                     ┌──────────────────────────┐ │
+│                                     │ Neon PostgreSQL          │ │
+│                                     │ (10.3M chunks)           │ │
+│                                     └──────────────────────────┘ │
 │                                                                  │
 │  Local Storage: likes[], bookmarks[], theme, onboarding         │
+│                                                                  │
+│  NOTE: Development uses Vite (port 5173) with API proxy to 4800 │
+│        Production uses single port 4800 serving built webapp    │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -191,26 +198,56 @@ serve({
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { routes } from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimit } from './middleware/rateLimit';
+import { testConnection } from './db/client';
 
 export const app = new Hono();
 
 // Global middleware
 app.use('*', logger());
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:4800'],
+  origin: ['http://localhost:5173', 'http://localhost:4800', 'http://127.0.0.1:5173'],
   credentials: true,
 }));
 app.use('/api/*', rateLimit);
 app.onError(errorHandler);
 
-// Health check
-app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+// Health check with database status
+app.get('/health', async (c) => {
+  try {
+    const dbInfo = await testConnection();
+    return c.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: true,
+        name: dbInfo.db,
+        serverTime: dbInfo.now
+      }
+    });
+  } catch (error) {
+    return c.json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }, 500);
+  }
+});
 
 // API routes
 app.route('/api', routes);
+
+// Serve static webapp files from webapp/dist
+app.use('/*', serveStatic({ root: './webapp/dist' }));
+
+// SPA fallback - serve index.html for client-side routing
+app.get('*', serveStatic({ path: './webapp/dist/index.html' }));
 
 export default app;
 ```
@@ -579,11 +616,32 @@ cd /aiprojects/doomscrolls
 mkdir webapp && cd webapp
 npm create vite@latest . -- --template react-ts
 npm install
-npm install tailwindcss postcss autoprefixer @tailwindcss/typography
+npm install @tailwindcss/vite  # Tailwind v4 Vite plugin
 npm install zustand react-router-dom lucide-react
 npm install -D @types/react @types/react-dom
-npx tailwindcss init -p
 ```
+
+**Vite Configuration (`webapp/vite.config.ts`):**
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4800',
+        changeOrigin: true,
+      },
+    },
+  },
+})
+```
+
+> **Note:** Uses Tailwind CSS v4 with the `@tailwindcss/vite` plugin. No `tailwind.config.js` needed - configuration is done in CSS with `@theme` directive.
 
 ### 5.2 Directory Structure
 
@@ -1412,7 +1470,7 @@ export async function generateFeed(options: FeedOptions) {
       JOIN authors a ON c.author_id = a.id
       LEFT JOIN works w ON c.work_id = w.id
       LEFT JOIN chunk_stats cs ON c.id = cs.chunk_id
-      WHERE c.char_count BETWEEN 50 AND 1000
+      WHERE LENGTH(c.text) BETWEEN 50 AND 1000  -- NOTE: Use LENGTH() not char_count
         ${excludeIds.length > 0 ? sql`AND c.id NOT IN ${sql(excludeIds)}` : sql``}
         ${cursorData.recentAuthors.length > 0
           ? sql`AND c.author_id NOT IN ${sql(cursorData.recentAuthors)}`
@@ -1913,6 +1971,90 @@ server {
     }
 }
 ```
+
+---
+
+---
+
+## Appendix D: Implementation Notes
+
+### Technical Decisions Made During Implementation
+
+1. **Single-Port Architecture**
+   - Both API and webapp served from port 4800
+   - Hono's `serveStatic` middleware serves `webapp/dist` files
+   - SPA fallback ensures client-side routing works
+   - Development uses Vite (5173) with proxy to API (4800)
+
+2. **Feed Algorithm Fix**
+   - `char_count` column in chunks table was NULL for most rows
+   - Changed to `LENGTH(c.text)` for dynamic length filtering
+   - Filter: passages between 50-1000 characters
+
+3. **Tailwind CSS v4**
+   - Uses `@tailwindcss/vite` plugin instead of PostCSS
+   - Theme configuration via `@theme` directive in CSS
+   - No separate `tailwind.config.js` file needed
+
+4. **Database Seeding**
+   - Categories seeded via pattern matching on work metadata
+   - Curated works selected using title/author pattern matching
+   - 13 categories, 153 curated works successfully seeded
+
+### Implemented Components Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Hono API Server | ✅ Complete | All routes working |
+| PostgreSQL Connection | ✅ Complete | Neon pooled connection |
+| Feed Algorithm | ✅ Complete | Diversity protection active |
+| Rate Limiting | ✅ Complete | In-memory, 1000/day |
+| Static File Serving | ✅ Complete | webapp/dist on 4800 |
+| React App | ✅ Complete | All pages implemented |
+| Zustand Stores | ✅ Complete | Persisted to localStorage |
+| Infinite Scroll | ✅ Complete | IntersectionObserver |
+| Like/Bookmark | ✅ Complete | Optimistic UI + API sync |
+| Theme Toggle | ✅ Complete | Dark/Light modes |
+| Category Filtering | ✅ Complete | 13 categories |
+
+### Known Limitations (Phase 1)
+
+1. **Author chunk_count** - Authors table has `chunk_count=0` for many authors (data import issue). Feed works because it joins directly on work_id.
+
+2. **No User Accounts** - All likes/bookmarks stored in localStorage only. Global like counts stored in database.
+
+3. **In-Memory Rate Limiting** - Uses Map-based rate limiting. Should upgrade to Redis for production/multi-instance.
+
+4. **No Search** - Phase 2 feature. Currently browse-only.
+
+### Running the Application
+
+**Development:**
+```bash
+# Terminal 1: API Server (with watch)
+cd /aiprojects/doomscrolls
+npx tsx watch server/index.ts
+
+# Terminal 2: Vite Dev Server (optional, for HMR)
+cd webapp
+npm run dev
+```
+
+**Production:**
+```bash
+# Build webapp
+cd webapp && npm run build && cd ..
+
+# Start with PM2
+pm2 start ecosystem.config.js --env production
+
+# Or start directly
+npx tsx server/index.ts
+```
+
+**Access:**
+- Production: `http://localhost:4800`
+- Development (HMR): `http://localhost:5173` (proxies API to 4800)
 
 ---
 

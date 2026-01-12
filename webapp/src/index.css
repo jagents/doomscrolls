@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/* Custom CSS Variables for Theming */
+:root {
+  /* Light Mode */
+  --bg-primary: 255 255 255;
+  --bg-secondary: 247 249 249;
+  --bg-tertiary: 239 243 244;
+  --text-primary: 15 20 25;
+  --text-secondary: 83 100 113;
+  --accent: 29 155 240;
+  --accent-hover: 26 140 216;
+  --border: 239 243 244;
+  --like: 249 24 128;
+  --success: 0 186 124;
+}
+
+.dark {
+  --bg-primary: 0 0 0;
+  --bg-secondary: 22 24 28;
+  --bg-tertiary: 29 31 35;
+  --text-primary: 231 233 234;
+  --text-secondary: 113 118 123;
+  --accent: 29 155 240;
+  --accent-hover: 26 140 216;
+  --border: 47 51 54;
+  --like: 249 24 128;
+  --success: 0 186 124;
+}
+
+body {
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom utility classes */
+.bg-primary { background-color: rgb(var(--bg-primary)); }
+.bg-secondary { background-color: rgb(var(--bg-secondary)); }
+.bg-tertiary { background-color: rgb(var(--bg-tertiary)); }
+.text-primary { color: rgb(var(--text-primary)); }
+.text-secondary { color: rgb(var(--text-secondary)); }
+.text-accent { color: rgb(var(--accent)); }
+.text-like { color: rgb(var(--like)); }
+.border-border { border-color: rgb(var(--border)); }
+
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 12px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: rgb(var(--bg-secondary));
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 6px;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--bg-tertiary)) 25%,
+    rgb(var(--bg-secondary)) 50%,
+    rgb(var(--bg-tertiary)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
