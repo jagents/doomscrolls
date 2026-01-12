@@ -348,29 +348,31 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
     <div className="space-y-6">
       {/* Content Diversity Section */}
       <div>
-        <h3 className="font-bold text-lg mb-4">Content Diversity</h3>
-        <div className="space-y-4">
+        <h3 className="font-bold text-lg mb-2">Content Diversity</h3>
+        <div className="space-y-2">
           {diversitySettings.map((setting) => (
-            <div key={setting.key} className="bg-secondary/50 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="font-medium">{setting.label}</label>
+            <div key={setting.key} className="bg-secondary/50 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="font-medium text-sm">{setting.label}</label>
+                  <p className="text-xs text-secondary">{setting.description}</p>
+                </div>
                 <input
                   type="number"
                   min={setting.min}
                   max={setting.max}
                   value={config[setting.key] as number}
                   onChange={(e) => handleChange(setting.key, parseInt(e.target.value) || setting.min)}
-                  className="w-24 px-3 py-1 bg-primary border border-border rounded-lg text-right"
+                  className="w-20 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
                 />
               </div>
-              <p className="text-sm text-secondary">{setting.description}</p>
               <input
                 type="range"
                 min={setting.min}
                 max={setting.max}
                 value={config[setting.key] as number}
                 onChange={(e) => handleChange(setting.key, parseInt(e.target.value))}
-                className="w-full mt-2 accent-accent"
+                className="w-full mt-1 accent-accent"
               />
             </div>
           ))}
@@ -379,11 +381,11 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
 
       {/* Length Diversity Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-lg">Length Diversity</h3>
           <button
             onClick={() => handleChange('lengthDiversityEnabled', !config.lengthDiversityEnabled)}
-            className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               config.lengthDiversityEnabled
                 ? 'bg-accent text-white'
                 : 'bg-secondary text-secondary'
@@ -394,12 +396,12 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
         </div>
 
         {config.lengthDiversityEnabled && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* Bucket boundaries */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               {lengthBucketSettings.map((setting) => (
-                <div key={setting.key} className="bg-secondary/50 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
+                <div key={setting.key} className="bg-secondary/50 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
                     <label className="font-medium text-sm">{setting.label}</label>
                     <input
                       type="number"
@@ -416,16 +418,16 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
             </div>
 
             {/* Ratio sliders */}
-            <div className="bg-secondary/50 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium">Target Mix</span>
-                <span className={`text-sm ${totalRatio === 100 ? 'text-green-500' : 'text-yellow-500'}`}>
+            <div className="bg-secondary/50 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-sm">Target Mix</span>
+                <span className={`text-xs ${totalRatio === 100 ? 'text-green-500' : 'text-yellow-500'}`}>
                   Total: {totalRatio}%
                 </span>
               </div>
 
               {/* Visual bar */}
-              <div className="flex h-4 rounded-full overflow-hidden mb-4">
+              <div className="flex h-3 rounded-full overflow-hidden mb-2">
                 <div
                   className="bg-green-500 transition-all"
                   style={{ width: `${(config.shortRatio / Math.max(totalRatio, 1)) * 100}%` }}
@@ -441,10 +443,10 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
               </div>
 
               {/* Individual sliders */}
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {ratioSettings.map((setting) => (
-                  <div key={setting.key} className="flex items-center gap-3">
-                    <span className={`w-20 text-sm font-medium ${setting.color}`}>{setting.label}</span>
+                  <div key={setting.key} className="flex items-center gap-2">
+                    <span className={`w-16 text-xs font-medium ${setting.color}`}>{setting.label}</span>
                     <input
                       type="range"
                       min={0}
@@ -459,16 +461,14 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
                       max={100}
                       value={config[setting.key] as number}
                       onChange={(e) => handleChange(setting.key, parseInt(e.target.value) || 0)}
-                      className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                      className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                     />
                   </div>
                 ))}
               </div>
 
-              <p className="text-xs text-secondary mt-3">
-                Short: {config.minLength}-{config.shortMaxLength} chars |
-                Medium: {config.shortMaxLength + 1}-{config.longMinLength - 1} chars |
-                Long: {config.longMinLength}-{config.maxLength} chars
+              <p className="text-xs text-secondary mt-2">
+                Short: {config.minLength}-{config.shortMaxLength} | Medium: {config.shortMaxLength + 1}-{config.longMinLength - 1} | Long: {config.longMinLength}-{config.maxLength}
               </p>
             </div>
           </div>
@@ -477,11 +477,11 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
 
       {/* Content Type Diversity Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-lg">Content Type Mix</h3>
           <button
             onClick={() => handleChange('typeDiversityEnabled', !config.typeDiversityEnabled)}
-            className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               config.typeDiversityEnabled
                 ? 'bg-accent text-white'
                 : 'bg-secondary text-secondary'
@@ -492,10 +492,10 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
         </div>
 
         {config.typeDiversityEnabled && (
-          <div className="bg-secondary/50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-medium">Target Type Mix</span>
-              <span className={`text-sm ${
+          <div className="bg-secondary/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-sm">Target Type Mix</span>
+              <span className={`text-xs ${
                 (config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio) === 100
                   ? 'text-green-500'
                   : 'text-yellow-500'
@@ -505,7 +505,7 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
             </div>
 
             {/* Visual bar */}
-            <div className="flex h-4 rounded-full overflow-hidden mb-4">
+            <div className="flex h-3 rounded-full overflow-hidden mb-2">
               <div
                 className="bg-indigo-500 transition-all"
                 style={{ width: `${(config.proseRatio / Math.max(config.proseRatio + config.quoteRatio + config.poetryRatio + config.speechRatio, 1)) * 100}%` }}
@@ -529,9 +529,9 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
             </div>
 
             {/* Individual sliders */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-sm font-medium text-indigo-500">Prose %</span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-16 text-xs font-medium text-indigo-500">Prose %</span>
                 <input
                   type="range"
                   min={0}
@@ -546,11 +546,11 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
                   max={100}
                   value={config.proseRatio}
                   onChange={(e) => handleChange('proseRatio', parseInt(e.target.value) || 0)}
-                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                  className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                 />
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-sm font-medium text-amber-500">Quote %</span>
+              <div className="flex items-center gap-2">
+                <span className="w-16 text-xs font-medium text-amber-500">Quote %</span>
                 <input
                   type="range"
                   min={0}
@@ -565,11 +565,11 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
                   max={100}
                   value={config.quoteRatio}
                   onChange={(e) => handleChange('quoteRatio', parseInt(e.target.value) || 0)}
-                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                  className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                 />
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-sm font-medium text-pink-500">Poetry %</span>
+              <div className="flex items-center gap-2">
+                <span className="w-16 text-xs font-medium text-pink-500">Poetry %</span>
                 <input
                   type="range"
                   min={0}
@@ -584,11 +584,11 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
                   max={100}
                   value={config.poetryRatio}
                   onChange={(e) => handleChange('poetryRatio', parseInt(e.target.value) || 0)}
-                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                  className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                 />
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-sm font-medium text-emerald-500">Speech %</span>
+              <div className="flex items-center gap-2">
+                <span className="w-16 text-xs font-medium text-emerald-500">Speech %</span>
                 <input
                   type="range"
                   min={0}
@@ -603,13 +603,13 @@ function AlgorithmTab({ config, onChange, onSave, saving, hasChanges }: Algorith
                   max={100}
                   value={config.speechRatio}
                   onChange={(e) => handleChange('speechRatio', parseInt(e.target.value) || 0)}
-                  className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                  className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                 />
               </div>
             </div>
 
-            <p className="text-xs text-secondary mt-3">
-              Prose: novels, passages, sections | Quotes: quotes, sayings | Poetry: verses, poems | Speech: speeches
+            <p className="text-xs text-secondary mt-2">
+              Prose: novels, passages | Quotes: quotes, sayings | Poetry: verses, poems | Speech: speeches
             </p>
           </div>
         )}
@@ -643,22 +643,22 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
     <div className="space-y-6">
       {/* Personalization Master Settings */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Brain className="w-5 h-5 text-accent" />
+        <div className="flex items-center gap-2 mb-2">
+          <Brain className="w-4 h-4 text-accent" />
           <h3 className="font-bold text-lg">Personalization</h3>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Master toggle */}
-          <div className="bg-secondary/50 rounded-xl p-4">
+          <div className="bg-secondary/50 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">Enable Personalization</div>
-                <p className="text-sm text-secondary">Use user signals to customize feed</p>
+                <div className="font-medium text-sm">Enable Personalization</div>
+                <p className="text-xs text-secondary">Use user signals to customize feed</p>
               </div>
               <button
                 onClick={() => onChange('enablePersonalization', !config.enablePersonalization)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                   config.enablePersonalization
                     ? 'bg-accent text-white'
                     : 'bg-secondary text-secondary'
@@ -672,11 +672,11 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
           {config.enablePersonalization && (
             <>
               {/* Min signals threshold */}
-              <div className="bg-secondary/50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
+              <div className="bg-secondary/50 rounded-lg p-3">
+                <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">Min Signals Required</div>
-                    <p className="text-sm text-secondary">Likes/bookmarks before enabling personalization</p>
+                    <div className="font-medium text-sm">Min Signals Required</div>
+                    <p className="text-xs text-secondary">Likes/bookmarks before enabling</p>
                   </div>
                   <input
                     type="number"
@@ -684,21 +684,21 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
                     max={50}
                     value={config.minSignalsForPersonalization}
                     onChange={(e) => onChange('minSignalsForPersonalization', parseInt(e.target.value) || 0)}
-                    className="w-20 px-3 py-1 bg-primary border border-border rounded-lg text-right"
+                    className="w-16 px-2 py-1 bg-primary border border-border rounded text-right text-sm"
                   />
                 </div>
               </div>
 
               {/* Full corpus toggle */}
-              <div className="bg-secondary/50 rounded-xl p-4">
+              <div className="bg-secondary/50 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">Full Corpus for Logged-in</div>
-                    <p className="text-sm text-secondary">Access all works instead of curated only</p>
+                    <div className="font-medium text-sm">Full Corpus for Logged-in</div>
+                    <p className="text-xs text-secondary">Access all works instead of curated</p>
                   </div>
                   <button
                     onClick={() => onChange('fullCorpusForLoggedIn', !config.fullCorpusForLoggedIn)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       config.fullCorpusForLoggedIn
                         ? 'bg-accent text-white'
                         : 'bg-secondary text-secondary'
@@ -716,14 +716,14 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
       {/* Signal Weights Section */}
       {config.enablePersonalization && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Sliders className="w-5 h-5 text-accent" />
+          <div className="flex items-center gap-2 mb-2">
+            <Sliders className="w-4 h-4 text-accent" />
             <h3 className="font-bold text-lg">Signal Weights</h3>
           </div>
 
           {/* Account-required signals */}
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-secondary mb-3">Account Required</h4>
+          <div className="mb-2">
+            <h4 className="text-xs font-medium text-secondary mb-1">Account Required</h4>
             <SignalWeightSlider
               label="Followed Author Boost"
               description="Boost for authors the user follows"
@@ -736,12 +736,12 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
           </div>
 
           {/* Device-based signals */}
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-secondary mb-3">Device-based (No account needed)</h4>
-            <div className="space-y-3">
+          <div className="mb-2">
+            <h4 className="text-xs font-medium text-secondary mb-1">Device-based (No account needed)</h4>
+            <div className="space-y-1">
               <SignalWeightSlider
                 label="Liked Author Boost"
-                description="Boost for authors of passages user liked"
+                description="Boost for authors user liked"
                 value={config.likedAuthorBoost}
                 onChange={(v) => onChange('likedAuthorBoost', v)}
                 max={5}
@@ -750,7 +750,7 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
               />
               <SignalWeightSlider
                 label="Liked Category Boost"
-                description="Boost for categories user prefers"
+                description="Boost for preferred categories"
                 value={config.likedCategoryBoost}
                 onChange={(v) => onChange('likedCategoryBoost', v)}
                 max={5}
@@ -759,7 +759,7 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
               />
               <SignalWeightSlider
                 label="Bookmarked Work Boost"
-                description="Boost for works user bookmarked passages from"
+                description="Boost for bookmarked works"
                 value={config.bookmarkedWorkBoost}
                 onChange={(v) => onChange('bookmarkedWorkBoost', v)}
                 max={5}
@@ -768,7 +768,7 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
               />
               <SignalWeightSlider
                 label="Bookmarked Author Boost"
-                description="Boost for authors of bookmarked passages"
+                description="Boost for bookmarked authors"
                 value={config.bookmarkedAuthorBoost}
                 onChange={(v) => onChange('bookmarkedAuthorBoost', v)}
                 max={5}
@@ -780,11 +780,11 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
 
           {/* Derived signals */}
           <div>
-            <h4 className="text-sm font-medium text-secondary mb-3">Derived Signals</h4>
-            <div className="space-y-3">
+            <h4 className="text-xs font-medium text-secondary mb-1">Derived Signals</h4>
+            <div className="space-y-1">
               <SignalWeightSlider
                 label="Similar Era Boost"
-                description="Boost for authors from similar time periods"
+                description="Boost for similar time periods"
                 value={config.similarEraBoost}
                 onChange={(v) => onChange('similarEraBoost', v)}
                 max={5}
@@ -793,7 +793,7 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
               />
               <SignalWeightSlider
                 label="Popularity Boost"
-                description="Boost based on passage like count"
+                description="Boost based on like count"
                 value={config.popularityBoost}
                 onChange={(v) => onChange('popularityBoost', v)}
                 max={2}
@@ -808,12 +808,12 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
       {/* Algorithm Tuning Section */}
       {config.enablePersonalization && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-accent" />
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-accent" />
             <h3 className="font-bold text-lg">Algorithm Tuning</h3>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-1">
             <TuningSlider
               label="Exploration (Random)"
               description="Weight for random discovery"
@@ -835,9 +835,9 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
           </div>
 
           {/* Exploration vs Exploitation visualization */}
-          <div className="bg-secondary/50 rounded-xl p-4 mt-4">
-            <div className="text-sm text-secondary mb-2">Exploration vs Exploitation Balance</div>
-            <div className="flex h-4 rounded-full overflow-hidden">
+          <div className="bg-secondary/50 rounded-lg p-3 mt-2">
+            <div className="text-xs text-secondary mb-1">Exploration vs Exploitation</div>
+            <div className="flex h-3 rounded-full overflow-hidden">
               <div
                 className="bg-blue-500 transition-all"
                 style={{ width: `${config.baseRandomWeight * 100}%` }}
@@ -847,7 +847,7 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
                 style={{ width: `${config.personalizationWeight * 100}%` }}
               />
             </div>
-            <div className="flex justify-between mt-2 text-xs text-secondary">
+            <div className="flex justify-between mt-1 text-xs text-secondary">
               <span>Random: {(config.baseRandomWeight * 100).toFixed(0)}%</span>
               <span>Personal: {(config.personalizationWeight * 100).toFixed(0)}%</span>
             </div>
@@ -858,22 +858,22 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
       {/* Embedding Settings Section */}
       {config.enablePersonalization && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-accent" />
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-accent" />
             <h3 className="font-bold text-lg">Embedding Similarity</h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* Enable toggle */}
-            <div className="bg-secondary/50 rounded-xl p-4">
+            <div className="bg-secondary/50 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">Enable Embedding Similarity</div>
-                  <p className="text-sm text-secondary">Use taste vectors for personalization</p>
+                  <div className="font-medium text-sm">Enable Embedding Similarity</div>
+                  <p className="text-xs text-secondary">Use taste vectors for personalization</p>
                 </div>
                 <button
                   onClick={() => onChange('enableEmbeddingSimilarity', !config.enableEmbeddingSimilarity)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     config.enableEmbeddingSimilarity
                       ? 'bg-accent text-white'
                       : 'bg-secondary text-secondary'
@@ -888,30 +888,30 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
               <>
                 <TuningSlider
                   label="Embedding Similarity Weight"
-                  description="Weight for embedding-based matching"
+                  description="Weight for embedding matching"
                   value={config.embeddingSimilarityWeight}
                   onChange={(v) => onChange('embeddingSimilarityWeight', v)}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-secondary/50 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium">Min Likes for Taste Vector</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-secondary/50 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-medium">Min Likes</div>
                       <input
                         type="number"
                         min={1}
                         max={50}
                         value={config.minLikesForTasteVector}
                         onChange={(e) => onChange('minLikesForTasteVector', parseInt(e.target.value) || 1)}
-                        className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                        className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                       />
                     </div>
-                    <p className="text-xs text-secondary">Likes needed to compute taste</p>
+                    <p className="text-xs text-secondary">For taste vector</p>
                   </div>
 
-                  <div className="bg-secondary/50 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium">Refresh Hours</div>
+                  <div className="bg-secondary/50 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-medium">Refresh Hours</div>
                       <input
                         type="number"
                         min={0.5}
@@ -919,10 +919,10 @@ function PersonalizationSection({ config, onChange }: PersonalizationSectionProp
                         step={0.5}
                         value={config.tasteVectorRefreshHours}
                         onChange={(e) => onChange('tasteVectorRefreshHours', parseFloat(e.target.value) || 1)}
-                        className="w-16 px-2 py-1 bg-primary border border-border rounded-lg text-right text-sm"
+                        className="w-14 px-2 py-0.5 bg-primary border border-border rounded text-right text-xs"
                       />
                     </div>
-                    <p className="text-xs text-secondary">How often to recompute taste</p>
+                    <p className="text-xs text-secondary">Recompute interval</p>
                   </div>
                 </div>
               </>
@@ -946,15 +946,13 @@ interface SignalWeightSliderProps {
 
 function SignalWeightSlider({ label, description, value, onChange, max, step }: SignalWeightSliderProps) {
   return (
-    <div className="bg-secondary/50 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <div className="font-medium text-sm">{label}</div>
-          <p className="text-xs text-secondary">{description}</p>
+    <div className="bg-secondary/50 rounded-lg p-2">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-xs">{label}</div>
+          <p className="text-xs text-secondary truncate">{description}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-mono w-12 text-right">{value.toFixed(1)}x</span>
-        </div>
+        <span className="text-xs font-mono w-10 text-right ml-2">{value.toFixed(1)}x</span>
       </div>
       <input
         type="range"
@@ -963,12 +961,8 @@ function SignalWeightSlider({ label, description, value, onChange, max, step }: 
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-accent"
+        className="w-full accent-accent mt-1"
       />
-      <div className="flex justify-between text-xs text-secondary mt-1">
-        <span>0x</span>
-        <span>{max}x</span>
-      </div>
     </div>
   );
 }
@@ -982,13 +976,13 @@ interface TuningSliderProps {
 
 function TuningSlider({ label, description, value, onChange }: TuningSliderProps) {
   return (
-    <div className="bg-secondary/50 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <div className="font-medium text-sm">{label}</div>
-          <p className="text-xs text-secondary">{description}</p>
+    <div className="bg-secondary/50 rounded-lg p-2">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-xs">{label}</div>
+          <p className="text-xs text-secondary truncate">{description}</p>
         </div>
-        <span className="text-sm font-mono">{(value * 100).toFixed(0)}%</span>
+        <span className="text-xs font-mono ml-2">{(value * 100).toFixed(0)}%</span>
       </div>
       <input
         type="range"
@@ -997,7 +991,7 @@ function TuningSlider({ label, description, value, onChange }: TuningSliderProps
         step={0.05}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-accent"
+        className="w-full accent-accent mt-1"
       />
     </div>
   );

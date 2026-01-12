@@ -9,13 +9,16 @@ const pool = new pg.Pool({
 });
 
 // =============================================================================
-// OPTIMIZED SETTINGS - 12GB RAM available
+// CRANKED UP SETTINGS - 12GB RAM available, 264MB used
 // =============================================================================
-const BATCH_SIZE = 250;             // Chunks per API call
-const BATCHES_PER_CYCLE = 20;       // Process 5000 chunks then pause
-const PAUSE_BETWEEN_CYCLES = 1000;  // 1 second pause between cycles
-const PAUSE_BETWEEN_BATCHES = 50;   // 50ms between API calls
+const BATCH_SIZE = 1000;            // Chunks per API call
+const BATCHES_PER_CYCLE = 30;       // Process 30,000 chunks then pause
+const PAUSE_BETWEEN_CYCLES = 500;   // 0.5 second pause between cycles
+const PAUSE_BETWEEN_BATCHES = 25;   // 25ms between API calls
 const MODEL = 'text-embedding-3-small';
+
+// Rate limit tracking
+let rateLimitHits = 0;
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -108,11 +111,16 @@ async function processCycle(): Promise<number> {
 
     } catch (error: any) {
       if (error?.status === 429) {
-        // Rate limited - wait longer
-        console.log('Rate limited, waiting 60 seconds...');
-        await sleep(60000);
+        rateLimitHits++;
+        const retryAfter = error?.headers?.['retry-after'] || 60;
+        console.log(`\n${'!'.repeat(60)}`);
+        console.log(`RATE LIMITED (429) - Hit #${rateLimitHits}`);
+        console.log(`Time: ${new Date().toISOString()}`);
+        console.log(`Waiting ${retryAfter} seconds before retry...`);
+        console.log(`${'!'.repeat(60)}\n`);
+        await sleep(retryAfter * 1000);
       } else {
-        console.error('Error processing batch:', error.message || error);
+        console.error(`\nERROR: ${error.message || error}`);
         await sleep(5000);
       }
     }
@@ -168,10 +176,13 @@ async function main() {
     const progress = await getProgress();
     const eta = progress.remaining / rate; // minutes remaining
 
-    console.log(`[Cycle ${cycleCount}] Processed: ${totalProcessed.toLocaleString()} | ` +
-                `Remaining: ${progress.remaining.toLocaleString()} | ` +
-                `Rate: ${Math.round(rate)}/min | ` +
-                `ETA: ${Math.round(eta)} min`);
+    const etaHours = Math.floor(eta / 60);
+    const etaMins = Math.round(eta % 60);
+    const rateLimitStr = rateLimitHits > 0 ? ` | 429s: ${rateLimitHits}` : '';
+    console.log(`[Cycle ${cycleCount}] +${processedThisCycle.toLocaleString()} = ${totalProcessed.toLocaleString()} | ` +
+                `Left: ${progress.remaining.toLocaleString()} | ` +
+                `${Math.round(rate)}/min | ` +
+                `ETA: ${etaHours}h${etaMins}m${rateLimitStr}`);
 
     // Pause between cycles to let server breathe
     await sleep(PAUSE_BETWEEN_CYCLES);
