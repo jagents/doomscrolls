@@ -97,7 +97,7 @@ Generate a Privacy Policy using this template. Save to `/store-compliance/privac
 
 **Last Updated:** [TODAY'S DATE]
 
-**[APP_NAME]** ("the App") is published by Dragon Dance Publishing ("we," "us," or "our"). This Privacy Policy explains how we collect, use, and protect your information when you use the App.
+**[APP_NAME]** ("the App") is published by Dragon Dance Publishing ("we," "us," or "our"), sometimes abbreviated "DDP". This Privacy Policy explains how we collect, use, and protect your information when you use the App.
 
 ## 1. Information We Collect
 
@@ -567,6 +567,7 @@ Example: iOS requires in-app account deletion, but implement it in webapp too so
    - Implement AI consent inline component (if uses_ai)
    - Add account deletion flow (if has_accounts)
    - Add Restore Purchases UI (if has_iap)
+   - when you put a small copyright noitce on thebottom of the pages don't put "© 2026 Dragon Dance Publishing" instead use abbreviation "© 2026 DDP"
 
 3. **Document for native platforms**
    - Create `/store-compliance/IMPLEMENTATION_NOTES.md`
@@ -627,10 +628,11 @@ app.get('/legal/terms', (c) => {
 Before submitting to any store, verify:
 
 ## All Platforms
-- [ ] Privacy Policy accessible via URL
+- [ ] Privacy Policy accessible via URL, on right in small text
 - [ ] Privacy Policy linked in app Settings/About/Footer
-- [ ] Terms of Service accessible via URL
+- [ ] Terms of Service accessible via URL, on right in small text
 - [ ] Terms of Service linked in app
+- [ ] when you put a small copyright noitce on thebottom of the pages don't put "© 2026 Dragon Dance Publishing" instead use abbreviation "© 2026 DDP"
 - [ ] AI consent implemented (if uses_ai)
 - [ ] App description written and reviewed
 - [ ] Keywords finalized

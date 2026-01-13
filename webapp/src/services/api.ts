@@ -134,6 +134,11 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
+  deleteAccount: () =>
+    request<{ success: boolean; message: string }>('/auth/me', {
+      method: 'DELETE',
+    }),
+
   // User Data
   getUserLikes: () =>
     request<{ likes: Array<{ chunkId: string; likedAt: string }> }>('/user/likes'),

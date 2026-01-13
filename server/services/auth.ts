@@ -355,3 +355,43 @@ export async function changePassword(
 
   return true;
 }
+
+// Delete user account and all associated data
+export async function deleteUser(userId: string): Promise<void> {
+  // Delete in order to handle any tables without CASCADE
+  // user_taste_vectors - may not exist yet
+  try {
+    await sql`DELETE FROM user_taste_vectors WHERE user_id = ${userId}`;
+  } catch {
+    // Table may not exist
+  }
+
+  // user_stats - may not exist
+  try {
+    await sql`DELETE FROM user_stats WHERE user_id = ${userId}`;
+  } catch {
+    // Table may not exist
+  }
+
+  // reading_progress
+  await sql`DELETE FROM reading_progress WHERE user_id = ${userId}`;
+
+  // list_chunks for user's lists, then lists
+  await sql`DELETE FROM list_chunks WHERE list_id IN (SELECT id FROM lists WHERE user_id = ${userId})`;
+  await sql`DELETE FROM lists WHERE user_id = ${userId}`;
+
+  // user_follows
+  await sql`DELETE FROM user_follows WHERE user_id = ${userId}`;
+
+  // user_bookmarks
+  await sql`DELETE FROM user_bookmarks WHERE user_id = ${userId}`;
+
+  // user_likes
+  await sql`DELETE FROM user_likes WHERE user_id = ${userId}`;
+
+  // refresh_tokens
+  await sql`DELETE FROM refresh_tokens WHERE user_id = ${userId}`;
+
+  // Finally delete the user
+  await sql`DELETE FROM users WHERE id = ${userId}`;
+}

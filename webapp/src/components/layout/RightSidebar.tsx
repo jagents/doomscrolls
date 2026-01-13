@@ -109,9 +109,29 @@ export function RightSidebar() {
       )}
 
       {/* Footer */}
-      <div className="text-sm text-secondary px-4 space-y-2">
-        <p>Scroll with purpose.</p>
-        <p>&copy; 2026 Doomscrolls</p>
+      <div className="text-xs text-secondary px-4 pt-4 border-t border-primary/10">
+        <p>
+          Scroll with purpose.{' '}
+          <a
+            href="/legal/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Privacy
+          </a>
+          {' · '}
+          <a
+            href="/legal/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Terms
+          </a>
+          {' '}
+          &copy; 2026 DDP
+        </p>
       </div>
     </div>
   );

@@ -1,20 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, Bookmark, Users, BookOpen, List, LogOut, Settings, ChevronRight, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, Bookmark, Users, BookOpen, List, LogOut, Settings, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
+import { useFeedStore } from '../store/feedStore';
 import { api } from '../services/api';
+import { DeleteAccountModal } from '../components/shared/DeleteAccountModal';
 import type { UserStats, ReadingProgress } from '../types';
 
 export function ProfilePage() {
+  const navigate = useNavigate();
   const { likes, bookmarks, theme, setTheme } = useUserStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { openAuthModal } = useUIStore();
+  const { reset: resetFeed } = useFeedStore();
 
   const [stats, setStats] = useState<UserStats | null>(null);
   const [reading, setReading] = useState<ReadingProgress[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isLoggedIn = isAuthenticated();
 
@@ -41,6 +47,24 @@ export function ProfilePage() {
       // Ignore errors
     }
     logout();
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await api.deleteAccount();
+      // Clear all local state
+      logout();
+      resetFeed();
+      setShowDeleteModal(false);
+      // Redirect to home
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const statItems = isLoggedIn && stats
@@ -223,7 +247,35 @@ export function ProfilePage() {
             </p>
           </div>
         )}
+
+        {/* Danger Zone - Only for logged in users */}
+        {isLoggedIn && (
+          <div className="mt-8 pt-6 border-t border-red-500/20">
+            <h4 className="text-red-500 font-semibold mb-3 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              Danger Zone
+            </h4>
+            <p className="text-secondary text-sm mb-4">
+              Permanently delete your account and all associated data.
+            </p>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
+            >
+              Delete Account
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteAccount}
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }

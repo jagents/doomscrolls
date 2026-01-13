@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { routes } from './routes';
+import { legal } from './routes/legal';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimit } from './middleware/rateLimit';
 import { testConnection } from './db/client';
@@ -46,10 +47,13 @@ app.get('/health', async (c) => {
 // API routes
 app.route('/api', routes);
 
+// Legal routes (Privacy Policy, Terms of Service)
+app.route('/legal', legal);
+
 // Serve static webapp files from webapp/dist
-app.use('/*', serveStatic({ root: '../webapp/dist' }));
+app.use('/*', serveStatic({ root: './webapp/dist' }));
 
 // SPA fallback - serve index.html for client-side routing
-app.get('*', serveStatic({ path: '../webapp/dist/index.html' }));
+app.get('*', serveStatic({ path: './webapp/dist/index.html' }));
 
 export default app;

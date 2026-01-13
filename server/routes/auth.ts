@@ -6,6 +6,7 @@ import {
   getUserById,
   updateUser,
   changePassword,
+  deleteUser,
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
@@ -285,6 +286,30 @@ auth.post('/change-password', requireAuth, async (c) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to change password';
     return c.json({ error: message }, 400);
+  }
+});
+
+// DELETE /api/auth/me - Delete user account and all data
+auth.delete('/me', requireAuth, async (c) => {
+  try {
+    const tokenUser = getCurrentUser(c);
+    if (!tokenUser) {
+      return c.json({ error: 'Not authenticated' }, 401);
+    }
+
+    // Delete the user and all associated data
+    await deleteUser(tokenUser.userId);
+
+    // Clear refresh token cookie
+    deleteCookie(c, 'refresh_token', { path: '/' });
+
+    return c.json({
+      success: true,
+      message: 'Account deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return c.json({ error: 'Failed to delete account' }, 500);
   }
 });
 
