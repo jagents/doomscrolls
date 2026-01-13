@@ -110,8 +110,8 @@ export function RightSidebar() {
 
       {/* Footer */}
       <div className="text-xs text-secondary px-4 pt-4 border-t border-primary/10">
+        <p className="mb-1">Scroll with purpose.</p>
         <p>
-          Scroll with purpose.{' '}
           <a
             href="/legal/privacy"
             target="_blank"
@@ -120,7 +120,7 @@ export function RightSidebar() {
           >
             Privacy
           </a>
-          {' · '}
+          {' | '}
           <a
             href="/legal/terms"
             target="_blank"
@@ -129,7 +129,7 @@ export function RightSidebar() {
           >
             Terms
           </a>
-          {' '}
+          {' | '}
           &copy; 2026 DDP
         </p>
       </div>

@@ -1,7 +1,7 @@
-# Doomscrolls Documentation v2
+# Doomscrolls Documentation v3
 
-**Version:** 2.0 (Phase 2)
-**Last Updated:** January 12, 2026
+**Version:** 3.0 (Phase 2 + Compliance)
+**Last Updated:** January 13, 2026
 
 ---
 
@@ -14,8 +14,9 @@
 5. [Social Features](#5-social-features)
 6. [Content Discovery](#6-content-discovery)
 7. [Admin Dashboard](#7-admin-dashboard)
-8. [Technical Reference](#8-technical-reference)
-9. [Glossary](#9-glossary)
+8. [Legal & Compliance](#8-legal--compliance)
+9. [Technical Reference](#9-technical-reference)
+10. [Glossary](#10-glossary)
 
 ---
 
@@ -77,8 +78,8 @@ The feed presents a curated stream of passages in a Twitter-style layout.
 │  - Lists           │  └────────────────┘  │  Categories         │
 │  - Profile         │  ┌────────────────┐  │  - Browse by topic  │
 │  - Theme Toggle    │  │ PassageCard    │  │                     │
-│  - Admin           │  │ ...            │  │                     │
-│                    │  └────────────────┘  │                     │
+│  - Admin           │  │ ...            │  │  ─────────────────  │
+│                    │  └────────────────┘  │  Footer: Legal links│
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -343,7 +344,26 @@ The feed learns from your behavior to show relevant content.
 - Works in progress
 - Works completed
 
-### 4.4 Data Sync
+### 4.4 Account Deletion
+
+**To delete your account:**
+1. Go to Profile page
+2. Scroll to "Danger Zone" section at bottom
+3. Click "Delete Account"
+4. Confirm in the modal dialog
+5. Account and all data deleted immediately
+
+**Data deleted includes:**
+- User account record
+- All likes
+- All bookmarks
+- All reading lists
+- Reading progress
+- Author follows
+
+**Important:** This action cannot be undone.
+
+### 4.5 Data Sync
 
 When you create an account, your local data syncs automatically:
 - Existing likes → synced to database
@@ -511,6 +531,11 @@ When you create an account, your local data syncs automatically:
 **Categories:**
 - Quick access to all categories
 - Work counts displayed
+
+**Footer:**
+- Legal links (Privacy Policy, Terms of Service)
+- Copyright notice
+- Format: "Scroll with purpose. Privacy · Terms © 2026 DDP"
 
 ---
 
@@ -685,15 +710,82 @@ All feed algorithm settings with real-time controls.
 
 ---
 
-## 8. Technical Reference
+## 8. Legal & Compliance
 
-### 8.1 API Base URL
+### 8.1 Overview
+
+Doomscrolls implements app store compliance features required for iOS App Store, Google Play Store, and Chrome Web Store submission.
+
+### 8.2 Legal Documents
+
+**Privacy Policy:**
+- URL: `/legal/privacy`
+- Describes data collection, usage, and retention
+- Required for all app stores
+
+**Terms of Service:**
+- URL: `/legal/terms`
+- Defines acceptable use and user responsibilities
+- Required for all app stores
+
+**Footer Display:**
+- Located in right sidebar
+- Format: "Scroll with purpose. Privacy · Terms © 2026 DDP"
+- Links open in new browser tab
+
+### 8.3 Account Deletion
+
+Required by Apple since 2022 for any app with user accounts.
+
+**In-App Deletion:**
+- Located in Profile page under "Danger Zone"
+- Shows confirmation modal listing all data to be deleted
+- Warns that action cannot be undone
+- Executes via `DELETE /api/auth/me`
+
+**Data Deleted:**
+- User account
+- All likes
+- All bookmarks
+- All reading lists (and contents)
+- Reading progress
+- Author follows
+- Refresh tokens
+
+### 8.4 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/legal/privacy` | GET | Privacy Policy HTML |
+| `/legal/terms` | GET | Terms of Service HTML |
+| `/api/auth/me` | DELETE | Delete user account (auth required) |
+
+### 8.5 Native App Implementation
+
+For iOS, Android, and Chrome extension implementations, see:
+- `/store-compliance/AuditDoomscrollsPlan.md` - Implementation guide
+- `/store-compliance/IMPLEMENTATION_NOTES.md` - Code patterns
+
+**Key Requirements by Platform:**
+
+| Platform | Legal Links | Account Deletion | Icon Size |
+|----------|-------------|------------------|-----------|
+| Web | Footer (done) | Profile page (done) | favicon |
+| iOS | Settings/About | In-app required (Apple policy) | 1024x1024 |
+| Android | Settings/About | In-app + web URL (Google policy) | 512x512 |
+| Chrome | Popup footer | Link to web app | 128x128 |
+
+---
+
+## 9. Technical Reference
+
+### 9.1 API Base URL
 
 ```
 http://localhost:4800/api
 ```
 
-### 8.2 Authentication
+### 9.2 Authentication
 
 **Headers:**
 ```
@@ -708,13 +800,13 @@ Content-Type: application/json
 3. Refresh endpoint returns new access token
 4. Refresh token expires in 7 days
 
-### 8.3 Rate Limiting
+### 9.3 Rate Limiting
 
 - 1000 requests per day per device ID
 - Resets at midnight UTC
 - Returns 429 when exceeded
 
-### 8.4 Pagination
+### 9.4 Pagination
 
 **Cursor-based pagination:**
 ```
@@ -730,7 +822,7 @@ Response:
 }
 ```
 
-### 8.5 Error Responses
+### 9.5 Error Responses
 
 ```json
 {
@@ -747,7 +839,7 @@ Common codes:
 
 ---
 
-## 9. Glossary
+## 10. Glossary
 
 | Term | Definition |
 |------|------------|
@@ -766,6 +858,7 @@ Common codes:
 | Exploitation | Personalized content based on preferences |
 | Taste Vector | Average embedding of user's liked passages |
 | Embedding | Vector representation of passage content |
+| Compliance | App store requirements (privacy, terms, deletion) |
 
 ---
 

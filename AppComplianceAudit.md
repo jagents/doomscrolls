@@ -563,11 +563,12 @@ Example: iOS requires in-app account deletion, but implement it in webapp too so
    - Add any account management endpoints
 
 2. **Web App second**
-   - Add footer links: Privacy Policy | Terms of Service
+   - Add footer with preferred format:
+     - Line 1: "Scroll with purpose."
+     - Line 2: "Privacy | Terms | © 2026 DDP"
    - Implement AI consent inline component (if uses_ai)
    - Add account deletion flow (if has_accounts)
    - Add Restore Purchases UI (if has_iap)
-   - when you put a small copyright noitce on thebottom of the pages don't put "© 2026 Dragon Dance Publishing" instead use abbreviation "© 2026 DDP"
 
 3. **Document for native platforms**
    - Create `/store-compliance/IMPLEMENTATION_NOTES.md`
@@ -578,13 +579,32 @@ Example: iOS requires in-app account deletion, but implement it in webapp too so
 ## Code Patterns
 
 ### Footer Links Pattern (Web)
+
+**Preferred format (two lines):**
+```
+Scroll with purpose.
+Privacy | Terms | © 2026 DDP
+```
+
+**HTML/JSX:**
 ```html
 <footer class="app-footer">
-  <a href="/legal/privacy" target="_blank">Privacy Policy</a>
-  <span class="separator">|</span>
-  <a href="/legal/terms" target="_blank">Terms of Service</a>
+  <p>Scroll with purpose.</p>
+  <p>
+    <a href="/legal/privacy" target="_blank">Privacy</a>
+    <span> | </span>
+    <a href="/legal/terms" target="_blank">Terms</a>
+    <span> | </span>
+    <span>© 2026 DDP</span>
+  </p>
 </footer>
 ```
+
+**Notes:**
+- Use pipe separators (|) not dots (·)
+- Tagline on first line, legal links on second
+- Short link text: "Privacy" and "Terms" (not "Privacy Policy" / "Terms of Service")
+- Abbreviate copyright: "© 2026 DDP" (not full company name)
 
 ### AI Consent Pattern (Web/React)
 ```tsx
@@ -628,11 +648,11 @@ app.get('/legal/terms', (c) => {
 Before submitting to any store, verify:
 
 ## All Platforms
-- [ ] Privacy Policy accessible via URL, on right in small text
-- [ ] Privacy Policy linked in app Settings/About/Footer
-- [ ] Terms of Service accessible via URL, on right in small text
-- [ ] Terms of Service linked in app
-- [ ] when you put a small copyright noitce on thebottom of the pages don't put "© 2026 Dragon Dance Publishing" instead use abbreviation "© 2026 DDP"
+- [ ] Privacy Policy accessible via URL
+- [ ] Terms of Service accessible via URL
+- [ ] Footer format: "Scroll with purpose." on line 1, "Privacy | Terms | © 2026 DDP" on line 2
+- [ ] Use pipe separators (|) not dots
+- [ ] Abbreviate copyright as "© 2026 DDP" (not full company name)
 - [ ] AI consent implemented (if uses_ai)
 - [ ] App description written and reviewed
 - [ ] Keywords finalized
