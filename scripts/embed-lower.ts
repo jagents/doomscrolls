@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import pg from 'pg';
 
 const WORKER_NAME = 'LOWER';
-const ID_FILTER = "id < 'chunk-5000000'";
+const ID_FILTER = "id < '7c2ca8ca-d5ab-4312-9c28-edc3a6b05c03'";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const pool = new pg.Pool({
