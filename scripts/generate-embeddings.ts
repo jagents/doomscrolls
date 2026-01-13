@@ -9,12 +9,12 @@ const pool = new pg.Pool({
 });
 
 // =============================================================================
-// CRANKED UP SETTINGS - 12GB RAM available, 264MB used
+// TUNED SETTINGS - sweet spot for API throughput
 // =============================================================================
-const BATCH_SIZE = 1000;            // Chunks per API call
-const BATCHES_PER_CYCLE = 30;       // Process 30,000 chunks then pause
-const PAUSE_BETWEEN_CYCLES = 500;   // 0.5 second pause between cycles
-const PAUSE_BETWEEN_BATCHES = 25;   // 25ms between API calls
+const BATCH_SIZE = 500;             // Chunks per API call
+const BATCHES_PER_CYCLE = 20;       // Process 10,000 chunks then pause
+const PAUSE_BETWEEN_CYCLES = 1000;  // 1 second pause between cycles
+const PAUSE_BETWEEN_BATCHES = 50;   // 50ms between API calls
 const MODEL = 'text-embedding-3-small';
 
 // Rate limit tracking
