@@ -9,6 +9,110 @@ Scope: Reconstructed data sources, ingestion pipeline, provenance, rights, dedup
 
 This section summarizes the corpus as it exists in the repo data outputs and progress logs. Counts marked as “unknown” were not found in local progress logs or summary files.
 
+### 1.0 Neon DB Snapshot (read-only)
+
+These are live counts from Neon (read-only query). Use these as the current source of truth for what is loaded in the DB.
+
+| Table | Count |
+|---|---:|
+| authors | 7,664 |
+| works | 17,291 |
+| chunks | 10,302,862 |
+| chunk_stats | 4 |
+| categories | 13 |
+| curated_works | 153 |
+| work_categories | 153 |
+
+### 1.0.1 Neon Schema (core tables)
+
+This is the observed schema in Neon for the main content tables.
+
+chunks:
+`id`, `text`, `author_id`, `work_id`, `type`, `position_index`, `position_chapter`, `position_section`, `position_paragraph`, `position_verse`, `position_book`, `source`, `source_chunk_id`, `bible_translation`, `bible_book`, `bible_chapter`, `bible_verse`, `char_count`, `word_count`, `embedding`, `created_at`, `search_vector`, `embedding_model`, `embedded_at`
+
+works:
+`id`, `title`, `slug`, `author_id`, `year`, `language`, `original_language`, `translator`, `type`, `genre`, `subgenre`, `tradition`, `source`, `source_id`, `source_url`, `source_list`, `source_sublist`, `source_bookshelf`, `ingestion_phase`, `gutenberg_downloads`, `chunk_count`, `word_count`, `full_text_url`, `created_at`, `search_vector`
+
+authors:
+`id`, `name`, `slug`, `name_variants`, `birth_year`, `death_year`, `nationality`, `era`, `sources`, `source_ids`, `work_count`, `chunk_count`, `primary_genre`, `traditions`, `created_at`, `search_vector`, `bio`, `bio_generated_at`, `image_url`
+
+### 1.0.2 Neon Distribution Checks (read-only)
+
+Works by source:
+
+| source | works |
+|---|---:|
+| gutenberg | 7,910 |
+| wikiquote | 4,394 |
+| poetrydb | 3,010 |
+| standardebooks | 1,354 |
+| bible-api | 264 |
+| newadvent | 125 |
+| ccel | 104 |
+| bible | 66 |
+| perseus | 44 |
+| sacredtexts | 20 |
+
+Chunks by source:
+
+| source | chunks |
+|---|---:|
+| gutenberg | 8,113,638 |
+| standardebooks | 1,645,680 |
+| wikiquote | 219,798 |
+| ccel | 100,436 |
+| bible-api | 92,959 |
+| newadvent | 67,452 |
+| bible | 31,009 |
+| perseus | 18,122 |
+| sacredtexts | 10,758 |
+| poetrydb | 3,010 |
+
+Works by ingestion_phase:
+
+| ingestion_phase | works |
+|---|---:|
+| null | 14,240 |
+| phase5b | 3,051 |
+
+Chunks by type:
+
+| type | chunks |
+|---|---:|
+| null | 8,113,638 |
+| passage | 1,832,934 |
+| quote | 219,798 |
+| verse | 125,432 |
+| speech | 3,982 |
+| poem | 3,010 |
+| section | 1,906 |
+| verse_group | 1,508 |
+| saying | 389 |
+| chapter | 265 |
+
+Sample row observations (read-only):
+- `works.source_url` is populated for some Gutenberg rows, but null on many others.
+- `works.ingestion_phase` is mostly null; only `phase5b` appears in the sample distribution.
+- `chunks.type` is often null for Gutenberg, but populated for other sources (`quote`, `verse`, `poem`, etc.).
+- `chunks.source_chunk_id` is sometimes null for Gutenberg entries, suggesting partial backfill for that field.
+
+### 1.0.3 Sample Works by Source (provenance fields)
+
+These are single random examples per source to show how provenance fields are populated in Neon.
+
+| source | title | source_id | source_url | source_list | source_sublist | source_bookshelf | ingestion_phase | full_text_url |
+|---|---|---|---|---|---|---|---|---|
+| gutenberg | The Practice and Theory of Bolshevism | 17350 | https://www.gutenberg.org/ebooks/17350 | null | null | null | phase5b | null |
+| standardebooks | Plague Ship | andre-norton_plague-ship | null | null | null | null | null | null |
+| wikiquote | Carlos Fuentes - Collected Quotes | Carlos_Fuentes | null | null | null | null | null | null |
+| poetrydb | 386. The Rights of Women—Spoken by Miss Fontenelle | null | null | null | null | null | null | null |
+| bible | Deuteronomy | Deuteronomy | null | null | null | null | null | null |
+| bible-api | Jeremiah (ASV) | jeremiah-asv | null | null | null | null | null | null |
+| perseus | Hippolytus | tlg0006.tlg005 | null | null | null | null | null | null |
+| ccel | Institutes of the Christian Religion | calvin-institutes | null | null | null | null | null | null |
+| newadvent | Letters | 3103 | null | null | null | null | null | null |
+| sacredtexts | Doctrine of the Mean | doctrine-of-the-mean | null | null | null | null | null | null |
+
 ### 1.1 Source Summary (works/passages)
 
 | Source | Works/Books | Passages/Chunks | Last Updated (from logs) | Evidence |
@@ -280,6 +384,7 @@ Below are the active sources discovered in the ingestion scripts and data output
 - Embedding model: OpenAI `text-embedding-3-small` (1536 dims) in `scripts/generate-embeddings.ts`.
 - Storage: pgvector in PostgreSQL (Neon), fields `embedding`, `embedding_model`, `embedded_at` updated per chunk.
 - Planned schema and strategy described in `OLDdocsplans/embeddingideas.md`.
+ - Status: embeddings are currently being processed via OpenAI in long-running batch jobs; completion is expected to enable full similarity search and feed personalization based on likes/saves.
 
 ### Similar passages
 - Implemented in `server/routes/passages.ts`.
