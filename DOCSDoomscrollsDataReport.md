@@ -1,6 +1,7 @@
 # Doomscrolls Data Report
 
 Generated: 2026-01-13
+Updated: 2026-01-14 (MVP additive DB augmentation)
 Scope: Reconstructed data sources, ingestion pipeline, provenance, rights, dedup, segmentation, and embeddings from repo files under `scripts/`, `data/`, and `OLDdocsplans/`.
 
 ---
@@ -112,6 +113,64 @@ These are single random examples per source to show how provenance fields are po
 | ccel | Institutes of the Christian Religion | calvin-institutes | null | null | null | null | null | null |
 | newadvent | Letters | 3103 | null | null | null | null | null | null |
 | sacredtexts | Doctrine of the Mean | doctrine-of-the-mean | null | null | null | null | null | null |
+
+### 1.0.4 MVP Additive Metadata Augmentation (2026-01-14)
+
+This run added new metadata tables only and did not modify any core text/IDs in `authors`, `works`, or `chunks`.
+
+**Script and params**
+- Script: `scripts/codex-db-augmentation.cjs`
+- Dry run: false
+- Batch size: 2000
+- QA thresholds: min length 10 chars, max length 5000 chars
+
+**New tables (additive)**
+- `work_metadata_aug`: rights/takedown tags, edition labels, source/provenance URLs, canonical work hints.
+- `chunk_hashes`: exact-duplicate hash per chunk (SHA-256 of normalized text).
+- `qa_flags`: per-chunk QA flags (too short, too long, empty).
+
+**Backfill rules (deterministic)**
+1) `work_metadata_aug`
+   - `rights_basis`: `pd_assumed` for Gutenberg/Standard Ebooks/Bible/Bible API/Perseus/CCEL/Sacred Texts/New Advent; `unknown` for Wikiquote/PoetryDB; `unknown` fallback.
+   - `takedown_status`: `active` (default for all works).
+   - `edition_label`: derived per source (e.g., `KJV` for `bible`, `Standard Ebooks`, `Gutenberg`, `Perseus`, etc.). For `bible-api`, the label is extracted from the trailing `(ASV|WEB|YLT|DBY)` in `works.title` when present.
+   - `source_url`/`full_text_url`: derived from `source` + `source_id` with fixed URL templates.
+   - `canonical_work_id`: first-seen work id for a normalized `(author_name, title)` pair (lowercase + trim).
+2) `chunk_hashes`
+   - `hash`: `sha256(lowercase(text) with whitespace collapsed)`; stored per `chunk_id`.
+   - `ON CONFLICT (chunk_id) DO NOTHING` to keep existing hashes unchanged.
+3) `qa_flags`
+   - `too_short`: `char_count` (or `LENGTH(text)`) < 10
+   - `too_long`: `char_count` (or `LENGTH(text)`) > 5000
+   - `empty_text`: `LENGTH(text) = 0`
+   - `UNIQUE (chunk_id, issue)` prevents duplicates.
+
+**Run stats (from progress logs)**
+- Works backfilled: 17,291 / 17,291 (100%)
+- Chunk hashes computed: 10,302,862 / 10,302,862 (100%)
+- QA flags inserted: `too_short`, `too_long`, `empty_text` (counts not logged)
+
+**Examples (schema-level, not live rows)**
+- `work_metadata_aug.source_url` patterns:
+  - Gutenberg: `https://www.gutenberg.org/ebooks/{source_id}`
+  - Standard Ebooks: `https://standardebooks.org/ebooks/{source_id}`
+  - Wikiquote: `https://en.wikiquote.org/wiki/{source_id}`
+  - Perseus: `https://www.perseus.tufts.edu/hopper/text?doc={source_id}`
+  - CCEL: `https://www.ccel.org/{source_id}`
+  - Sacred Texts: `https://www.sacred-texts.com/{source_id}`
+  - New Advent: `https://www.newadvent.org/fathers/{source_id}.htm`
+  - Bible/Bible API: `https://www.biblegateway.com/passage/?search={source_id}`
+- `edition_label` derivations:
+  - `bible` -> `KJV`
+  - `bible-api` -> `ASV` (if title ends with `(ASV)`), similarly `WEB`, `YLT`, `DBY`
+  - `standardebooks` -> `Standard Ebooks`
+  - `gutenberg` -> `Gutenberg`
+- `chunk_hashes.hash` example derivation:
+  - Input text: `"To be,\n  or not to be."` -> normalized `"to be, or not to be."` -> `sha256(...)`
+
+**Notes**
+- The augmentation is purely additive; core `works`, `authors`, and `chunks` rows are untouched.
+- Canonical work hints are heuristic; they only collapse exact title+author matches after normalization.
 
 ### 1.1 Source Summary (works/passages)
 
