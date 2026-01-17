@@ -143,6 +143,88 @@ This means the `popularityBoost` signal based on `like_count` is currently a no-
 
 **Recommendation:** Option 2 for now - popularity will naturally populate as users engage.
 
+### 1.6 Progress Logging & Monitoring
+
+All batch scripts will write progress to a central log file for monitoring.
+
+**Log File Location:**
+```
+logs/feed-algo-progress.log
+```
+
+**Log Format:**
+```
+[2026-01-17 10:23:45] PHASE-0: sample_key backfill started
+[2026-01-17 10:24:12] PHASE-0: 100000/10302862 rows (0.97%)
+[2026-01-17 10:25:33] PHASE-0: 200000/10302862 rows (1.94%)
+...
+[2026-01-17 11:45:00] PHASE-0: COMPLETE - 10302862 rows in 81 minutes
+[2026-01-17 11:46:00] PHASE-1: heuristic scores started
+[2026-01-17 11:47:22] PHASE-1: 10000/10302862 rows (0.10%)
+...
+```
+
+**Monitoring Commands:**
+
+```bash
+# Watch progress in real-time
+tail -f logs/feed-algo-progress.log
+
+# See last 50 lines
+tail -50 logs/feed-algo-progress.log
+
+# Check status of specific phase
+grep "PHASE-2" logs/feed-algo-progress.log
+
+# See all COMPLETE messages
+grep "COMPLETE" logs/feed-algo-progress.log
+```
+
+**Logging Utility (used by all scripts):**
+
+```typescript
+// scripts/utils/progress-logger.ts
+import fs from 'fs';
+import path from 'path';
+
+const LOG_FILE = path.join(process.cwd(), 'logs/feed-algo-progress.log');
+
+// Ensure logs directory exists
+fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+
+export function logProgress(phase: string, message: string) {
+  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  const line = `[${timestamp}] ${phase}: ${message}\n`;
+  fs.appendFileSync(LOG_FILE, line);
+  console.log(line.trim());  // Also print to console
+}
+
+export function logPhaseStart(phase: string, description: string) {
+  logProgress(phase, `${description} started`);
+}
+
+export function logPhaseProgress(phase: string, current: number, total: number) {
+  const pct = ((current / total) * 100).toFixed(2);
+  logProgress(phase, `${current}/${total} rows (${pct}%)`);
+}
+
+export function logPhaseComplete(phase: string, total: number, durationMs: number) {
+  const minutes = Math.round(durationMs / 60000);
+  logProgress(phase, `COMPLETE - ${total} rows in ${minutes} minutes`);
+}
+```
+
+### 1.7 Embedding Parallelization Safety
+
+**Confirmed:** Phases 0-5 can run in parallel with embedding workers. They write to different columns:
+
+| Process | Columns Written |
+|---------|-----------------|
+| Embedding workers | `embedding`, `embedding_model`, `embedded_at` |
+| Phases 0-5 | `sample_key`, `heuristic_score`, `bartletts_match`, `goodreads_count`, `wikisource_featured`, `resonance_score` |
+
+**IMPORTANT:** Stop after Phase 5 and confirm embeddings are complete before starting Phase 6 (cluster quality) or Phase 7 (taste vectors).
+
 ---
 
 ## 2. Database Schema Changes
