@@ -2,6 +2,7 @@
 
 **Version:** 3.0 (Phase 2 + Compliance)
 **Last Updated:** January 13, 2026
+**Addendum Updated:** January 14, 2026 (additive metadata augmentation)
 
 ---
 
@@ -775,6 +776,19 @@ For iOS, Android, and Chrome extension implementations, see:
 | Android | Settings/About | In-app + web URL (Google policy) | 512x512 |
 | Chrome | Popup footer | Link to web app | 128x128 |
 
+### 8.6 Provenance, Rights, and Takedown Metadata (Additive)
+
+As of Jan 14, 2026, Doomscrolls includes additive metadata tables that store rights/provenance hints and takedown state without altering core content tables.
+
+**Why this matters (compliance and legal)**
+- Provides an explicit `rights_basis` per work to document the assumed rights model (e.g., public domain vs unknown).
+- Enables a `takedown_status` flag for takedown requests without deleting content, while keeping a reversible audit trail.
+- Adds stable `source_url` and `full_text_url` provenance links for attribution and legal review.
+
+**Current limitations**
+- Rights values are heuristic defaults based on source; they are not a legal determination.
+- Takedown workflow is not yet exposed in the admin UI; only the data layer is present.
+
 ---
 
 ## 9. Technical Reference
@@ -836,6 +850,35 @@ Common codes:
 - `NOT_FOUND` - Resource not found
 - `RATE_LIMITED` - Too many requests
 - `VALIDATION_ERROR` - Invalid input
+
+### 9.6 Additive Metadata Tables (MVP)
+
+These tables were added to support MVP rights/provenance, dedup, and QA without touching `authors`, `works`, or `chunks`.
+
+**Tables and key fields**
+- `work_metadata_aug`
+  - `rights_basis`: `pd_assumed` or `unknown` by source
+  - `takedown_status`: default `active`
+  - `edition_label`: user-facing edition tag (e.g., `KJV`, `Standard Ebooks`)
+  - `edition_source`: same as `works.source`
+  - `source_url`, `full_text_url`: derived canonical source links
+  - `canonical_work_id`: normalized (author, title) grouping hint
+- `chunk_hashes`
+  - `hash`: SHA-256 of normalized chunk text (lowercase + collapsed whitespace)
+- `qa_flags`
+  - `issue`: `too_short`, `too_long`, `empty_text`
+  - `details`: stored rule for the flag
+
+**How these are useful (product + future features)**
+- **Attribution UX**: show `edition_label`, `source_url`, and `full_text_url` under passages and in work pages.
+- **Source filtering**: allow users to filter by edition/source or show “source badges.”
+- **Canonical grouping**: group works that are the same title/author across sources for cleaner discovery pages.
+- **Exact-duplicate detection**: use `chunk_hashes` to detect exact repeats and reduce feed redundancy.
+- **QA gating**: filter or down-rank `qa_flags` items to improve feed quality.
+- **Takedown workflows**: `takedown_status` can power removals without deleting source data.
+
+**Notes**
+- All fields are additive; no existing IDs or text were altered.
 
 ---
 

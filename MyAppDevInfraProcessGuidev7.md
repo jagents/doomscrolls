@@ -1,8 +1,12 @@
-# My App Development Infrastructure & Process Guide v5
+# My App Development Infrastructure & Process Guide v7
 
-_Last updated: December 2025_
+_Last updated: January 2026_
 
 > **Purpose**: A comprehensive, all-inclusive guide for building multi-channel apps — from initial idea to App Store/Play Store/Chrome Web Store submission. Covers my complete workflow including planning, server-side development, iOS/Android/Chrome development, infrastructure, and deployment. Written for myself, team members, or an LLM to help launch new projects.
+>
+> **What's New in v7**: Added complete **Cross-App Middleware for Suite Monetization** — centralized entitlement management, device identity, code redemption, and analytics tracking across multiple apps in a suite. Uses Scout App Studio (6 apps) as reference implementation. This pattern enables consistent monetization, email capture, and premium upgrade flows across an entire app portfolio.
+>
+> **What's New in v6**: Added Scout App Studio (scoutdev user, 6 apps on ports 4400-4406), updated droplet specs (4 vCPU / 8GB RAM)
 >
 > **What's New in v5**: Added complete **ExecFunc Design System** (Phthalo Purple theme, typography, component patterns), **Collapsible Sections Pattern** for cross-platform expandable UI, **Input Controls Pattern** (dropdowns, checkboxes, options passing), **Cross-Platform UI Consistency Practices** (iOS as source of truth), **Platform-Specific Gotchas & Lessons Learned**, and updated all checklists with styling items. Based on comprehensive learnings from styling "Read Between the Lines" across all 4 platforms.
 >
@@ -131,11 +135,23 @@ _Last updated: December 2025_
     - iOS Gotchas
     - Cross-Platform Lessons Learned
 
-19. [APPENDIX: TEMPLATES & CHECKLISTS](#appendix-templates--checklists)
+19. [PART NINETEEN: CROSS-APP MIDDLEWARE FOR SUITE MONETIZATION (NEW v7)](#part-nineteen-cross-app-middleware-for-suite-monetization-new-v7)
+    - The Problem It Solves
+    - Architecture Overview
+    - Middleware Service Implementation
+    - App Backend Integration
+    - Client-Side Implementation
+    - Tier Configuration Patterns
+    - Code Redemption System
+    - Analytics Event Tracking
+    - Reference Implementation: Scout App Studio
+
+20. [APPENDIX: TEMPLATES & CHECKLISTS](#appendix-templates--checklists)
     - Quick Reference Commands
     - Complete New App Checklist
     - Monetization Checklist
     - Design System Checklist (NEW v5)
+    - Middleware Integration Checklist (NEW v7)
 
 ---
 
@@ -798,7 +814,7 @@ class MainActivity : ComponentActivity() {
 
 | Setting | Value |
 |---------|-------|
-| **Droplet Name** | dragondance1-ubuntu-s-1vcpu-1gb-sfo2-01 |
+| **Droplet Name** | dragondance1 |
 | **Region** | SFO2 (San Francisco) |
 | **OS** | Ubuntu 25.04 x64 |
 | **Specs** | 4 vCPUs / 8 GB RAM / 160 GB Disk |
@@ -819,10 +835,17 @@ class MainActivity : ComponentActivity() {
 | 4300 | execfunc/betweenlines | Main app |
 | 4301 | execfunc/timetogo | (reserved) |
 | 4302-4305 | execfunc/* | (reserved) |
+| 4400 | scouting/scoutsim | Scout Conference Simulator |
+| 4402 | scouting/uniforminspector | Uniform Inspector General |
+| 4403 | scouting/gearguru | Gear Guru |
+| 4404 | scouting/scoutquizzer | Scout Knowledge Quizzer |
+| 4405 | scouting/requirementscoach | Scout Requirements Coach |
+| 4406 | scouting/meritbadgecoach | Scout Merit Badge Coach |
+| 4410 | scouting/middleware | Scout Middleware (Entitlement Service) |
 | 5205 | Scholar Agent Swarm | Paper Discovery |
 | 5300 | execfunc/betweenlines | Dashboard/UI |
 
-**Available port ranges**: 3200-3299, 4400-4499, 5400-5499
+**Available port ranges**: 3200-3299, 4407-4409, 4411-4499, 5400-5499
 
 ## User Accounts Summary
 
@@ -831,6 +854,7 @@ class MainActivity : ComponentActivity() {
 | `aiadmin` | Top-level admin | `/home/aiadmin` |
 | `scholardev` | Scholar Agent Swarm | `/aiprojects/scholarswarm/scholarproject` |
 | `efuncdev` | Executive Function apps | `/aiprojects/execfunc/betweenlines` |
+| `scoutdev` | Scout App Studio (6 apps + middleware) | `/aiprojects/scouting/` |
 
 ---
 
@@ -1229,7 +1253,7 @@ val DangerRed = Color(0xFFDC2626)
 All ExecFunc apps use this header pattern on the main input screen:
 
 ```
-┌────────────────────────────────┐
+┌────────────────────────────────────┐
 │     [Gradient Background]      │
 │                                │
 │      App Title (centered)      │
@@ -1882,16 +1906,1042 @@ Missing any step = option is silently ignored.
 
 ---
 
+# PART NINETEEN: CROSS-APP MIDDLEWARE FOR SUITE MONETIZATION (NEW v7)
+
+When building a suite of related apps (like Scout App Studio with 6 apps), managing entitlements, user identity, and analytics individually in each app creates duplication, inconsistency, and maintenance burden. This section describes the centralized middleware pattern that solves these problems.
+
+---
+
+## The Problem It Solves
+
+### Without Middleware (Each App Manages Own Entitlements)
+
+```
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   App 1      │  │   App 2      │  │   App 3      │
+├──────────────┤  ├──────────────┤  ├──────────────┤
+│ Rate Limits  │  │ Rate Limits  │  │ Rate Limits  │
+│ Tier Logic   │  │ Tier Logic   │  │ Tier Logic   │
+│ Code Redeem  │  │ Code Redeem  │  │ Code Redeem  │
+│ Email Capture│  │ Email Capture│  │ Email Capture│
+│ Analytics    │  │ Analytics    │  │ Analytics    │
+└──────────────┘  └──────────────┘  └──────────────┘
+      ↓                 ↓                 ↓
+   6 tables          6 tables          6 tables
+   (separate)        (separate)        (separate)
+```
+
+**Problems:**
+- Duplicated entitlement logic across apps
+- Inconsistent tier handling
+- Can't share premium status across apps
+- Code redemption only works in one app
+- Analytics scattered across databases
+- Email captured multiple times from same user
+
+### With Middleware (Centralized Entitlement Service)
+
+```
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   App 1      │  │   App 2      │  │   App 3      │
+├──────────────┤  ├──────────────┤  ├──────────────┤
+│ App Logic    │  │ App Logic    │  │ App Logic    │
+│ App-Specific │  │ App-Specific │  │ App-Specific │
+│ Tier Limits  │  │ Tier Limits  │  │ Tier Limits  │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+       │                 │                 │
+       └────────────┬────┴────────────────┘
+                    ▼
+        ┌──────────────────────────┐
+        │      MIDDLEWARE          │
+        ├──────────────────────────┤
+        │ Device Identity          │
+        │ Tier Management          │
+        │ Code Redemption          │
+        │ Email Capture            │
+        │ Analytics Events         │
+        └──────────────────────────┘
+                    ↓
+              Single Database
+              (shared state)
+```
+
+**Benefits:**
+- Single source of truth for user tier
+- Premium code works across all apps in suite
+- Email captured once, applies everywhere
+- Consistent upgrade flows
+- Unified analytics
+- Apps focus on their unique value
+
+---
+
+## Architecture Overview
+
+### System Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           APP SUITE CLIENTS                              │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐            │
+│  │  Web App  │  │ iOS App   │  │Android App│  │  Chrome   │            │
+│  │           │  │           │  │           │  │ Extension │            │
+│  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘            │
+└────────┼──────────────┼──────────────┼──────────────┼────────────────────┘
+         │              │              │              │
+         └──────────────┴──────────────┴──────────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │    APP BACKEND        │
+                    │   (e.g., Port 4403)   │
+                    ├───────────────────────┤
+                    │ middlewareClient.ts   │  ← Calls middleware
+                    │ tierLimits.ts         │  ← App-specific limits
+                    │ entitlement.ts route  │  ← Proxies + adds limits
+                    │ codes.ts route        │  ← Proxies code redeem
+                    │ events.ts route       │  ← Proxies analytics
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │    MIDDLEWARE         │
+                    │   (Port 4410)         │
+                    ├───────────────────────┤
+                    │ GET /v1/entitlement   │  ← Device tier lookup
+                    │ POST /v1/email/capture│  ← Email collection
+                    │ POST /v1/codes/redeem │  ← Code validation
+                    │ POST /v1/events       │  ← Analytics ingestion
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │  SHARED DATABASE      │
+                    │   (Neon PostgreSQL)   │
+                    ├───────────────────────┤
+                    │ devices table         │
+                    │ entitlements table    │
+                    │ codes table           │
+                    │ redemptions table     │
+                    │ events table          │
+                    └───────────────────────┘
+```
+
+### Port Allocation Strategy
+
+Reserve a dedicated port for middleware in your suite's port range:
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| App 1 | 4400 | Scout Conference Simulator |
+| App 2 | 4402 | Uniform Inspector |
+| App 3 | 4403 | Gear Guru |
+| App 4 | 4404 | Scout Quizzer |
+| App 5 | 4405 | Requirements Coach |
+| App 6 | 4406 | Merit Badge Coach |
+| **Middleware** | **4410** | **Entitlement Service** |
+
+---
+
+## Middleware Service Implementation
+
+### Project Structure
+
+```
+middleware/
+├── backend/
+│   ├── src/
+│   │   ├── index.ts              # Entry point
+│   │   ├── config.ts             # Environment config
+│   │   ├── routes/
+│   │   │   ├── entitlement.ts    # Tier lookup
+│   │   │   ├── email.ts          # Email capture
+│   │   │   ├── codes.ts          # Code redemption
+│   │   │   └── events.ts         # Analytics
+│   │   ├── services/
+│   │   │   ├── entitlement.ts    # Tier logic
+│   │   │   ├── codes.ts          # Code validation
+│   │   │   └── analytics.ts      # Event processing
+│   │   └── db/
+│   │       ├── client.ts         # Database connection
+│   │       └── migrations/       # Schema migrations
+│   ├── package.json
+│   └── ecosystem.config.cjs
+└── .env
+```
+
+### Key Middleware Endpoints
+
+#### GET `/v1/entitlement`
+Returns the device's current tier and entitlement source.
+
+```typescript
+// Request
+GET /v1/entitlement?deviceId=xxx&platform=web
+
+// Response
+{
+  "success": true,
+  "data": {
+    "deviceId": "xxx",
+    "tier": "email",           // free | email | premium
+    "source": "email_capture", // default | email_capture | code_redeem | subscription
+    "expiresAt": null,         // null = never expires
+    "email": "user@example.com"
+  }
+}
+```
+
+#### POST `/v1/email/capture`
+Captures email and upgrades tier from free → email.
+
+```typescript
+// Request
+POST /v1/email/capture
+{
+  "deviceId": "xxx",
+  "email": "user@example.com",
+  "source": "web",           // where captured
+  "newsletter": true         // opted into newsletter
+}
+
+// Response
+{
+  "success": true,
+  "data": {
+    "tier": "email",
+    "previousTier": "free"
+  }
+}
+```
+
+#### POST `/v1/codes/redeem`
+Validates and redeems a promo, troop, or beta code.
+
+```typescript
+// Request
+POST /v1/codes/redeem
+{
+  "deviceId": "xxx",
+  "code": "SCOUT2026"
+}
+
+// Response (success)
+{
+  "success": true,
+  "data": {
+    "tier": "premium",
+    "codeType": "promo",
+    "expiresAt": "2026-02-16T00:00:00.000Z"  // 30 days
+  }
+}
+
+// Response (failure)
+{
+  "success": false,
+  "error": "Invalid or expired code"
+}
+```
+
+#### POST `/v1/events`
+Ingests analytics events from apps.
+
+```typescript
+// Request
+POST /v1/events
+{
+  "deviceId": "xxx",
+  "platform": "web",
+  "appId": "gearguru",
+  "events": [
+    {
+      "event": "analysis_completed",
+      "timestamp": "2026-01-16T10:30:00.000Z",
+      "data": { "itemCount": 15, "readinessScore": 87 }
+    }
+  ]
+}
+
+// Response
+{
+  "success": true,
+  "data": { "eventsProcessed": 1 }
+}
+```
+
+### Database Schema
+
+```sql
+-- Devices table (first seen)
+CREATE TABLE devices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id TEXT UNIQUE NOT NULL,
+  platform TEXT NOT NULL,
+  first_seen_at TIMESTAMPTZ DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Entitlements table
+CREATE TABLE entitlements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id TEXT UNIQUE NOT NULL REFERENCES devices(device_id),
+  tier TEXT NOT NULL DEFAULT 'free',  -- free, email, premium
+  source TEXT NOT NULL DEFAULT 'default',  -- default, email_capture, code_redeem, subscription
+  email TEXT,
+  newsletter_opt_in BOOLEAN DEFAULT FALSE,
+  expires_at TIMESTAMPTZ,  -- null = never expires
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Codes table
+CREATE TABLE codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT UNIQUE NOT NULL,
+  code_type TEXT NOT NULL,  -- promo, troop, beta
+  tier_grant TEXT NOT NULL DEFAULT 'premium',
+  duration_days INTEGER,  -- null = lifetime
+  max_uses INTEGER,  -- null = unlimited
+  current_uses INTEGER DEFAULT 0,
+  expires_at TIMESTAMPTZ,  -- when code itself expires
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Redemptions table (audit trail)
+CREATE TABLE redemptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id TEXT NOT NULL REFERENCES devices(device_id),
+  code_id UUID NOT NULL REFERENCES codes(id),
+  redeemed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Events table
+CREATE TABLE events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  app_id TEXT NOT NULL,
+  event_name TEXT NOT NULL,
+  event_data JSONB,
+  event_timestamp TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_entitlements_device ON entitlements(device_id);
+CREATE INDEX idx_events_device ON events(device_id);
+CREATE INDEX idx_events_app ON events(app_id);
+CREATE INDEX idx_events_timestamp ON events(event_timestamp);
+```
+
+---
+
+## App Backend Integration
+
+Each app in the suite adds a thin integration layer to communicate with middleware.
+
+### Files to Add
+
+```
+backend/src/
+├── config/
+│   └── tierLimits.ts       # App-specific limits per tier
+├── services/
+│   └── middlewareClient.ts # HTTP client for middleware
+└── routes/
+    ├── entitlement.ts      # /v1/entitlement - proxies + adds limits
+    ├── codes.ts            # /v1/codes/redeem - proxies
+    └── events.ts           # /v1/events - proxies
+```
+
+### middlewareClient.ts
+
+```typescript
+// backend/src/services/middlewareClient.ts
+const MIDDLEWARE_URL = process.env.MIDDLEWARE_URL || 'http://localhost:4410';
+
+export interface MiddlewareEntitlement {
+  deviceId: string;
+  tier: 'free' | 'email' | 'premium';
+  source: string;
+  email?: string;
+  expiresAt?: string;
+}
+
+export async function getEntitlement(
+  deviceId: string,
+  platform: string
+): Promise<MiddlewareEntitlement> {
+  const response = await fetch(
+    `${MIDDLEWARE_URL}/v1/entitlement?deviceId=${deviceId}&platform=${platform}`
+  );
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data;
+}
+
+export async function captureEmail(
+  deviceId: string,
+  email: string,
+  source: string,
+  newsletter: boolean
+): Promise<{ tier: string }> {
+  const response = await fetch(`${MIDDLEWARE_URL}/v1/email/capture`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId, email, source, newsletter }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data;
+}
+
+export async function redeemCode(
+  deviceId: string,
+  code: string
+): Promise<{ tier: string; codeType: string; expiresAt?: string }> {
+  const response = await fetch(`${MIDDLEWARE_URL}/v1/codes/redeem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId, code }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data;
+}
+
+export async function trackEvents(
+  deviceId: string,
+  platform: string,
+  appId: string,
+  events: Array<{ event: string; timestamp: string; data?: Record<string, any> }>
+): Promise<void> {
+  await fetch(`${MIDDLEWARE_URL}/v1/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId, platform, appId, events }),
+  });
+}
+```
+
+### tierLimits.ts
+
+Each app defines its own limits per tier:
+
+```typescript
+// backend/src/config/tierLimits.ts
+
+// Example: Gear Guru limits
+export const TIER_LIMITS = {
+  free: {
+    analysesPerDay: 3,
+    comparisonsPerDay: 5,
+    customChecklists: 1,
+    premiumChecklists: false,
+    weatherIntegration: false,
+  },
+  email: {
+    analysesPerDay: 10,
+    comparisonsPerDay: 20,
+    customChecklists: 3,
+    premiumChecklists: false,
+    weatherIntegration: false,
+  },
+  premium: {
+    analysesPerDay: -1,  // unlimited
+    comparisonsPerDay: -1,  // unlimited
+    customChecklists: 10,
+    premiumChecklists: true,
+    weatherIntegration: true,
+  },
+} as const;
+
+export type Tier = keyof typeof TIER_LIMITS;
+export type TierLimits = typeof TIER_LIMITS[Tier];
+
+export function getLimitsForTier(tier: Tier): TierLimits {
+  return TIER_LIMITS[tier] || TIER_LIMITS.free;
+}
+```
+
+### entitlement.ts Route
+
+Proxies to middleware and enriches with app-specific limits:
+
+```typescript
+// backend/src/routes/entitlement.ts
+import { Hono } from 'hono';
+import { getEntitlement, captureEmail } from '../services/middlewareClient';
+import { getLimitsForTier, TIER_LIMITS } from '../config/tierLimits';
+
+const app = new Hono();
+
+// GET /v1/entitlement - Get user's tier with app-specific limits
+app.get('/', async (c) => {
+  const deviceId = c.req.query('deviceId') || c.req.header('x-device-id');
+  const platform = c.req.query('platform') || 'web';
+
+  if (!deviceId) {
+    return c.json({ success: false, error: 'Device ID required' }, 400);
+  }
+
+  try {
+    const entitlement = await getEntitlement(deviceId, platform);
+    const limits = getLimitsForTier(entitlement.tier as keyof typeof TIER_LIMITS);
+
+    // Calculate cache expiration (10 days)
+    const cacheUntil = new Date();
+    cacheUntil.setDate(cacheUntil.getDate() + 10);
+
+    return c.json({
+      success: true,
+      data: {
+        tier: entitlement.tier,
+        source: entitlement.source,
+        cache_until: cacheUntil.toISOString(),
+        features: limits,
+        upgradeOptions: getUpgradeOptions(entitlement.tier),
+      },
+    });
+  } catch (error) {
+    console.error('Entitlement error:', error);
+    // Fallback to free tier on error
+    return c.json({
+      success: true,
+      data: {
+        tier: 'free',
+        source: 'default',
+        features: getLimitsForTier('free'),
+        upgradeOptions: getUpgradeOptions('free'),
+      },
+    });
+  }
+});
+
+// POST /v1/entitlement/unlock - Capture email to upgrade tier
+app.post('/unlock', async (c) => {
+  const body = await c.req.json();
+  const { deviceId, email, newsletter = false } = body;
+
+  if (!deviceId || !email) {
+    return c.json({ success: false, error: 'Device ID and email required' }, 400);
+  }
+
+  try {
+    const result = await captureEmail(deviceId, email, 'web', newsletter);
+    const limits = getLimitsForTier(result.tier as keyof typeof TIER_LIMITS);
+
+    return c.json({
+      success: true,
+      data: {
+        tier: result.tier,
+        features: limits,
+      },
+    });
+  } catch (error) {
+    console.error('Email capture error:', error);
+    return c.json({ success: false, error: 'Failed to capture email' }, 500);
+  }
+});
+
+function getUpgradeOptions(currentTier: string) {
+  if (currentTier === 'premium') return [];
+  const options = [];
+  if (currentTier === 'free') {
+    options.push({
+      type: 'email',
+      label: 'Unlock more features',
+      description: 'Provide your email to unlock additional daily uses',
+    });
+  }
+  options.push({
+    type: 'code',
+    label: 'Redeem a code',
+    description: 'Enter a promo or troop code for premium access',
+  });
+  return options;
+}
+
+export default app;
+```
+
+---
+
+## Client-Side Implementation
+
+### 10-Day Entitlement Caching
+
+To reduce server load and support offline usage, clients cache entitlement for 10 days with a warning on days 8-9.
+
+```javascript
+// web/js/entitlement.js
+
+const CACHE_KEYS = {
+  entitlement: 'entitlement_cache',
+  cacheDate: 'entitlement_cache_date',
+};
+
+// Check cache status
+function checkCacheStatus() {
+  const cacheDate = localStorage.getItem(CACHE_KEYS.cacheDate);
+  if (!cacheDate) return { valid: false, warning: false, daysOld: null };
+
+  const daysSinceCache = (Date.now() - new Date(cacheDate).getTime()) / (1000 * 60 * 60 * 24);
+
+  return {
+    valid: daysSinceCache < 10,
+    warning: daysSinceCache >= 8 && daysSinceCache < 10,
+    daysOld: Math.floor(daysSinceCache),
+  };
+}
+
+// Get entitlement (from cache or server)
+async function getEntitlement(forceRefresh = false) {
+  const cacheStatus = checkCacheStatus();
+
+  // Return cached if valid and not forcing refresh
+  if (!forceRefresh && cacheStatus.valid) {
+    const cached = localStorage.getItem(CACHE_KEYS.entitlement);
+    if (cached) {
+      const entitlement = JSON.parse(cached);
+      entitlement._fromCache = true;
+      entitlement._cacheWarning = cacheStatus.warning;
+      return entitlement;
+    }
+  }
+
+  // Fetch from server
+  try {
+    const response = await fetch(`/v1/entitlement?deviceId=${getDeviceId()}&platform=web`);
+    const data = await response.json();
+
+    if (data.success) {
+      // Cache the result
+      localStorage.setItem(CACHE_KEYS.entitlement, JSON.stringify(data.data));
+      localStorage.setItem(CACHE_KEYS.cacheDate, new Date().toISOString());
+      return data.data;
+    }
+  } catch (error) {
+    console.error('Failed to fetch entitlement:', error);
+    // Fall back to cache even if expired
+    const cached = localStorage.getItem(CACHE_KEYS.entitlement);
+    if (cached) return JSON.parse(cached);
+  }
+
+  // Ultimate fallback
+  return { tier: 'free', features: DEFAULT_FREE_LIMITS };
+}
+
+// Show connectivity warning banner
+function showConnectivityWarning() {
+  const banner = document.createElement('div');
+  banner.className = 'connectivity-warning';
+  banner.innerHTML = `
+    <span>Your subscription status may be out of date.</span>
+    <button onclick="refreshEntitlement()">Refresh Now</button>
+  `;
+  document.body.prepend(banner);
+}
+
+// Refresh entitlement
+async function refreshEntitlement() {
+  const entitlement = await getEntitlement(true);
+  updateTierUI(entitlement);
+  hideConnectivityWarning();
+}
+```
+
+### Tier Badge Display
+
+```javascript
+// Show current tier in header
+function updateTierBadge(tier) {
+  const badge = document.getElementById('tier-badge');
+  badge.className = `tier-badge tier-${tier}`;
+  badge.textContent = tier.charAt(0).toUpperCase() + tier.slice(1);
+}
+```
+
+```css
+.tier-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tier-free { background: #E5E7EB; color: #6B7280; }
+.tier-email { background: #DBEAFE; color: #1D4ED8; }
+.tier-premium { background: #FEF3C7; color: #B45309; }
+```
+
+### Email Capture Modal
+
+```javascript
+// Show email capture modal
+function showEmailModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h2>Unlock More Features</h2>
+      <p>Provide your email to get additional daily uses.</p>
+      <input type="email" id="email-input" placeholder="your@email.com">
+      <label>
+        <input type="checkbox" id="newsletter-checkbox">
+        Send me tips and updates
+      </label>
+      <div class="modal-actions">
+        <button onclick="closeModal()">Cancel</button>
+        <button onclick="submitEmail()" class="primary">Unlock</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function submitEmail() {
+  const email = document.getElementById('email-input').value;
+  const newsletter = document.getElementById('newsletter-checkbox').checked;
+
+  const response = await fetch('/v1/entitlement/unlock', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceId: getDeviceId(),
+      email,
+      newsletter,
+    }),
+  });
+
+  const data = await response.json();
+  if (data.success) {
+    // Update cache
+    localStorage.setItem(CACHE_KEYS.entitlement, JSON.stringify(data.data));
+    localStorage.setItem(CACHE_KEYS.cacheDate, new Date().toISOString());
+    updateTierUI(data.data);
+    closeModal();
+    showSuccessToast('Account upgraded!');
+  }
+}
+```
+
+### Code Redemption Modal
+
+```javascript
+async function submitCode() {
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+
+  const response = await fetch('/v1/codes/redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceId: getDeviceId(),
+      code,
+    }),
+  });
+
+  const data = await response.json();
+  if (data.success) {
+    // Refresh entitlement from server
+    const entitlement = await getEntitlement(true);
+    updateTierUI(entitlement);
+    closeModal();
+    showSuccessToast(`Premium unlocked! Expires: ${formatDate(data.data.expiresAt)}`);
+  } else {
+    showError(data.error || 'Invalid code');
+  }
+}
+```
+
+---
+
+## Tier Configuration Patterns
+
+### Different Apps, Different Limits
+
+Each app has unique limits per tier based on its resource usage:
+
+```typescript
+// Gear Guru (Vision AI - expensive)
+export const GEAR_GURU_LIMITS = {
+  free: { analysesPerDay: 3, comparisonsPerDay: 5 },
+  email: { analysesPerDay: 10, comparisonsPerDay: 20 },
+  premium: { analysesPerDay: -1, comparisonsPerDay: -1 },
+};
+
+// Scout Quizzer (Text AI - cheaper)
+export const QUIZZER_LIMITS = {
+  free: { questionsPerDay: 5, availableTopics: 4 },
+  email: { questionsPerDay: 15, availableTopics: 7 },
+  premium: { questionsPerDay: -1, availableTopics: 10 },
+};
+
+// Requirements Coach (Mixed AI)
+export const REQUIREMENTS_LIMITS = {
+  free: { queriesPerDay: 5, historyDays: 7 },
+  email: { queriesPerDay: 15, historyDays: 30 },
+  premium: { queriesPerDay: -1, historyDays: -1 },
+};
+```
+
+### Content Gating by Tier
+
+Some apps gate content (topics, badges, checklists) by tier:
+
+```typescript
+// Scout Quizzer - Topic access by tier
+export const FREE_TOPICS = ['scout_oath', 'scout_law', 'lnt_principles', 'camping'];
+export const EMAIL_TOPICS = [...FREE_TOPICS, 'outdoor_code', 'knots', 'campcraft'];
+export const PREMIUM_TOPICS = ['first_aid', 'navigation', 'wilderness_survival'];
+
+export function getAvailableTopics(tier: string): string[] {
+  switch (tier) {
+    case 'premium': return [...EMAIL_TOPICS, ...PREMIUM_TOPICS];
+    case 'email': return EMAIL_TOPICS;
+    default: return FREE_TOPICS;
+  }
+}
+
+// Merit Badge Coach - Badge access by tier
+export const TIER_LIMITS = {
+  free: { badgeAccess: ['first-aid'] },
+  email: { badgeAccess: ['first-aid', 'citizenship-community'] },
+  premium: { badgeAccess: 'all' as const },
+};
+```
+
+---
+
+## Code Redemption System
+
+### Code Types
+
+| Type | Duration | Source | Use Case |
+|------|----------|--------|----------|
+| **Promo** | 30 days | Marketing campaigns | Short-term promotions (SCOUT2026) |
+| **Troop** | 1 year | Troop leaders | Group access for Scout units |
+| **Beta** | Lifetime | Beta program | Early tester rewards |
+
+### Creating Codes
+
+```sql
+-- Promo code (30 days, unlimited uses, expires in 3 months)
+INSERT INTO codes (code, code_type, tier_grant, duration_days, max_uses, expires_at)
+VALUES ('SCOUT2026', 'promo', 'premium', 30, NULL, '2026-04-01');
+
+-- Troop code (1 year, limited to 50 scouts)
+INSERT INTO codes (code, code_type, tier_grant, duration_days, max_uses)
+VALUES ('TROOP123ABC', 'troop', 'premium', 365, 50);
+
+-- Beta code (lifetime, single use)
+INSERT INTO codes (code, code_type, tier_grant, duration_days, max_uses)
+VALUES ('BETA-XYZ123', 'beta', 'premium', NULL, 1);
+```
+
+### Code Validation Logic
+
+```typescript
+async function validateAndRedeemCode(deviceId: string, code: string) {
+  // Find the code
+  const codeRecord = await db.query(
+    'SELECT * FROM codes WHERE code = $1',
+    [code.toUpperCase()]
+  );
+
+  if (!codeRecord) {
+    throw new Error('Invalid code');
+  }
+
+  // Check if code expired
+  if (codeRecord.expires_at && new Date(codeRecord.expires_at) < new Date()) {
+    throw new Error('Code has expired');
+  }
+
+  // Check if max uses reached
+  if (codeRecord.max_uses && codeRecord.current_uses >= codeRecord.max_uses) {
+    throw new Error('Code has reached maximum uses');
+  }
+
+  // Check if device already redeemed this code
+  const existingRedemption = await db.query(
+    'SELECT * FROM redemptions WHERE device_id = $1 AND code_id = $2',
+    [deviceId, codeRecord.id]
+  );
+
+  if (existingRedemption) {
+    throw new Error('Code already redeemed');
+  }
+
+  // Calculate expiration for entitlement
+  let expiresAt = null;
+  if (codeRecord.duration_days) {
+    expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + codeRecord.duration_days);
+  }
+
+  // Update entitlement
+  await db.query(`
+    INSERT INTO entitlements (device_id, tier, source, expires_at)
+    VALUES ($1, $2, 'code_redeem', $3)
+    ON CONFLICT (device_id) DO UPDATE
+    SET tier = $2, source = 'code_redeem', expires_at = $3, updated_at = NOW()
+  `, [deviceId, codeRecord.tier_grant, expiresAt]);
+
+  // Record redemption
+  await db.query(
+    'INSERT INTO redemptions (device_id, code_id) VALUES ($1, $2)',
+    [deviceId, codeRecord.id]
+  );
+
+  // Increment use count
+  await db.query(
+    'UPDATE codes SET current_uses = current_uses + 1 WHERE id = $1',
+    [codeRecord.id]
+  );
+
+  return {
+    tier: codeRecord.tier_grant,
+    codeType: codeRecord.code_type,
+    expiresAt,
+  };
+}
+```
+
+---
+
+## Analytics Event Tracking
+
+### Standard Events (All Apps)
+
+| Event | Trigger | Data |
+|-------|---------|------|
+| `app_opened` | App launch | platform, tier |
+| `upgrade_prompt_shown` | Show upgrade UI | currentTier, location |
+| `email_captured` | Submit email | success |
+| `code_redeemed` | Submit code | success, codeType |
+
+### App-Specific Events
+
+```typescript
+// Gear Guru
+{ event: 'analysis_started', data: { tripType: 'weekend_campout' } }
+{ event: 'analysis_completed', data: { itemCount: 15 } }
+{ event: 'comparison_completed', data: { readinessScore: 87 } }
+
+// Scout Quizzer
+{ event: 'quiz_started', data: { topicId: 'scout_law', difficulty: 'beginner' } }
+{ event: 'quiz_completed', data: { score: 8, total: 10, duration: 120 } }
+{ event: 'streak_updated', data: { streakDays: 5 } }
+
+// Merit Badge Coach
+{ event: 'badge_selected', data: { badgeId: 'first-aid' } }
+{ event: 'chat_sent', data: { badgeId: 'first-aid' } }
+{ event: 'review_submitted', data: { badgeId: 'camping', requirementId: '1a' } }
+```
+
+### Client-Side Event Batching
+
+```javascript
+// Batch events and send periodically
+const eventQueue = [];
+const BATCH_INTERVAL = 30000; // 30 seconds
+
+function trackEvent(event, data = {}) {
+  eventQueue.push({
+    event,
+    timestamp: new Date().toISOString(),
+    data,
+  });
+}
+
+async function flushEvents() {
+  if (eventQueue.length === 0) return;
+
+  const events = [...eventQueue];
+  eventQueue.length = 0;
+
+  try {
+    await fetch('/v1/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deviceId: getDeviceId(),
+        platform: 'web',
+        events,
+      }),
+    });
+  } catch (error) {
+    // Re-queue events on failure
+    eventQueue.unshift(...events);
+  }
+}
+
+// Flush on interval
+setInterval(flushEvents, BATCH_INTERVAL);
+
+// Flush on page unload
+window.addEventListener('beforeunload', flushEvents);
+```
+
+---
+
+## Reference Implementation: Scout App Studio
+
+Scout App Studio is the reference implementation with 6 apps sharing a single middleware:
+
+### Apps in the Suite
+
+| App | Port | Purpose | Key Limits |
+|-----|------|---------|------------|
+| Scout Conference Simulator | 4400 | Role-play practice for Scout conferences | simulationsPerDay |
+| Uniform Inspector | 4402 | AI-powered uniform photo analysis | inspectionsPerDay |
+| Gear Guru | 4403 | Camera-based packing verification | analysesPerDay |
+| Scout Quizzer | 4404 | Scenario-based knowledge quizzes | questionsPerDay |
+| Requirements Coach | 4405 | Activity-to-requirement mapping | queriesPerDay |
+| Merit Badge Coach | 4406 | AI-powered merit badge preparation | chatsPerDay, reviewsPerDay |
+| **Middleware** | **4410** | Centralized entitlement service | — |
+
+### Shared Benefits
+
+1. **Single Code Redemption**: A troop code works across all 6 apps
+2. **One Email, All Apps**: Provide email once, upgrade tier in all apps
+3. **Unified Analytics**: Cross-app engagement metrics in one database
+4. **Consistent UX**: Same upgrade modals, tier badges, and flows everywhere
+
+### Directory Structure
+
+```
+/aiprojects/scouting/
+├── scoutsim/            # App 1
+├── uniforminspector/    # App 2
+├── gearguru/            # App 3
+├── scoutquizzer/        # App 4
+├── requirementscoach/   # App 5
+├── meritbadgecoach/     # App 6
+├── middleware/          # Shared middleware service
+└── ScoutAppSuite/       # Shared strategy docs
+```
+
+---
+
 # APPENDIX: TEMPLATES & CHECKLISTS
 
 ---
 
 ## Quick Reference Commands
 
-### Server
+### Server (ExecFunc)
 ```bash
 ssh efuncdev@157.245.191.245
 cd /aiprojects/execfunc/{app}
+claude
+pm2 status
+pm2 logs {app} --lines 100
+pm2 restart {app}
+git push
+```
+
+### Server (Scout Apps)
+```bash
+ssh scoutdev@157.245.191.245
+cd /aiprojects/scouting/{app}
 claude
 pm2 status
 pm2 logs {app} --lines 100
@@ -2035,8 +3085,59 @@ curl -X POST http://localhost:{port}/v1/analyze \
 
 ---
 
+## Middleware Integration Checklist (NEW v7)
+
+### Middleware Service
+- [ ] Create middleware project folder
+- [ ] Reserve middleware port (e.g., 4410)
+- [ ] Set up Neon PostgreSQL database
+- [ ] Run schema migrations
+- [ ] Implement `/v1/entitlement` endpoint
+- [ ] Implement `/v1/email/capture` endpoint
+- [ ] Implement `/v1/codes/redeem` endpoint
+- [ ] Implement `/v1/events` endpoint
+- [ ] Create initial promo codes
+- [ ] Add to pm2 and start
+- [ ] Test all endpoints
+
+### App Backend Integration (Per App)
+- [ ] Create `src/config/tierLimits.ts` with app-specific limits
+- [ ] Create `src/services/middlewareClient.ts`
+- [ ] Create `src/routes/entitlement.ts`
+- [ ] Create `src/routes/codes.ts`
+- [ ] Create `src/routes/events.ts`
+- [ ] Register routes in index.ts
+- [ ] Add MIDDLEWARE_URL to .env
+- [ ] Test entitlement endpoint
+- [ ] Test email unlock
+- [ ] Test code redemption
+- [ ] Test event tracking
+
+### Web App Integration (Per App)
+- [ ] Add 10-day entitlement caching
+- [ ] Add connectivity warning banner (days 8-9)
+- [ ] Add tier badge in header
+- [ ] Add email capture modal
+- [ ] Add code redemption modal
+- [ ] Add upgrade section UI
+- [ ] Track standard analytics events
+- [ ] Track app-specific analytics events
+
+### Mobile/Extension Integration (Future)
+- [ ] Add middleware client to iOS
+- [ ] Add middleware client to Android
+- [ ] Add middleware client to Chrome extension
+- [ ] Implement email capture flow on each platform
+- [ ] Implement code redemption on each platform
+- [ ] Add entitlement caching on each platform
+- [ ] Add analytics tracking on each platform
+
+---
+
 ## Version History
 
+- v7 (Jan 2026): Cross-App Middleware for Suite Monetization (centralized entitlement, code redemption, analytics)
+- v6 (Jan 2026): Added Scout App Studio (scoutdev user, 6 apps on ports 4400-4406), updated droplet specs (4 vCPU / 8GB RAM)
 - v5 (Dec 2025): ExecFunc Design System, Collapsible Sections, Input Controls, Cross-Platform UI Consistency, Platform Gotchas
 - v4 (Dec 2025): Monetization & Entitlements, Rate Limiting, Device Identity, IAP Integration
 - v3 (Dec 2025): AI Pipeline Patterns, Cross-Platform JSON, Test Patterns
